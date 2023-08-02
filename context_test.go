@@ -47,4 +47,10 @@ func Test_joinNames(t *testing.T) {
 
 		assert.Equal(t, "objects *Object.method behaves some way", joinNames(strs...))
 	})
+
+	t.Run("empty value in the middle", func(t *testing.T) {
+		strs := []string{"objects", "*Object", ".method", "", "behaves some way"}
+
+		assert.Equal(t, "objects *Object.method behaves some way", joinNames(strs...))
+	})
 }
