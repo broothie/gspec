@@ -2,8 +2,6 @@ package gspec
 
 import (
 	"strings"
-
-	"github.com/samber/lo"
 )
 
 type ContextFunc func(c *Context)
@@ -46,7 +44,7 @@ func (c *Context) joinNames(strs ...string) string {
 	strs = append([]string{c.name}, strs...)
 
 	if c.parent == nil {
-		return strings.Join(lo.WithoutEmpty(strs), " ")
+		return strings.TrimSpace(strings.Join(strs, " "))
 	} else {
 		return c.parent.joinNames(strs...)
 	}
