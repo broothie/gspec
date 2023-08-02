@@ -43,6 +43,28 @@ func Test(t *testing.T) {
 }
 ```
 
+If you need to access the underlying `*testing.T`, you can do so from within a hook or test case via `c.T()`.
+
+```go
+package examples
+
+import (
+   "testing"
+
+   "github.com/broothie/gspec"
+)
+
+func somethingThatNeedsTestingT(t *testing.T) {}
+
+func Test_t(t *testing.T) {
+   gspec.Describe(t, ".T", func(c *gspec.Context) {
+      c.It("returns a *testing.T", func(c *gspec.Case) {
+         somethingThatNeedsTestingT(c.T())
+      })
+   })
+}
+```
+
 ### Groups
 
 Test cases can be grouped together via `c.Describe` and `c.Context`.
@@ -78,6 +100,8 @@ func Test_groups(t *testing.T) {
 and are cached for the duration of the test case.
 
 `Let` values can be overwritten in nested groups, but **their return type must remain the same**.
+When overwriting a `Let` in this way, the returned function needn't be captured.
+The value will still be registered for the context, even though the function was captured in an outer group.
 
 ```go
 package examples
