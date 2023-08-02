@@ -116,6 +116,33 @@ func TestLet(t *testing.T) {
 
 		assert.Equal(t, calls, 1)
 	})
+
+	t.Run("type mismatch", func(t *testing.T) {
+		mockT := mocks.NewMocktestingT(gomock.NewController(t))
+		mockT.EXPECT().Helper().AnyTimes()
+
+		allowTestFuncs(mockT, "behavior")
+		allowTestFuncs(mockT, "when string behavior")
+
+		expected := `Let "value" overwritten with different types: int, string`
+		assert.PanicsWithValue(t, expected, func() {
+			Run(mockT, func(c *Context) {
+				value := Let(c, "value", func(c *Case) int { return 10 })
+
+				c.It("behavior", func(c *Case) {
+					c.Assert().Equal(10, value(c))
+				})
+
+				c.Context("when string", func(c *Context) {
+					Let(c, "value", func(c *Case) string { return "10" })
+
+					c.It("behavior", func(c *Case) {
+						c.Assert().Equal("10", value(c))
+					})
+				})
+			})
+		})
+	})
 }
 
 func TestContext_findLet(t *testing.T) {

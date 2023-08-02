@@ -20,7 +20,17 @@ type (
 // The value will still be registered for the context, even though the function was captured in an outer group.
 func Let[T any](c *Context, name string, f LetFunc[T]) LetFunc[T] {
 	c.registerLet(name, func(c *Case) any { return f(c) })
-	return func(c *Case) T { return c.evaluateLet(name).(T) }
+
+	return func(c *Case) T {
+		value := c.evaluateLet(name)
+		cast, ok := value.(T)
+		if !ok {
+			var t T
+			panic(fmt.Sprintf("Let %q overwritten with different types: %T, %T", name, t, value))
+		}
+
+		return cast
+	}
 }
 
 func (c *Context) registerLet(name string, f letFunc) {
@@ -33,7 +43,7 @@ func (c *Context) findLet(name string) letFunc {
 	} else if c.parent != nil {
 		return c.parent.findLet(name)
 	} else {
-		panic(fmt.Sprintf("no let defined with name %q", name))
+		panic(fmt.Sprintf("no Let defined with name %q", name))
 	}
 }
 

@@ -34,3 +34,17 @@ func TestContext_joinNames(t *testing.T) {
 
 	assert.Equal(t, "top middle bottom case", context.joinNames("case"))
 }
+
+func Test_joinNames(t *testing.T) {
+	t.Run("receiver first", func(t *testing.T) {
+		strs := []string{"*Object", ".method", "when some context", "behaves some way"}
+
+		assert.Equal(t, "*Object.method when some context behaves some way", joinNames(strs...))
+	})
+
+	t.Run("receiver in the middle", func(t *testing.T) {
+		strs := []string{"objects", "*Object", ".method", "behaves some way"}
+
+		assert.Equal(t, "objects *Object.method behaves some way", joinNames(strs...))
+	})
+}

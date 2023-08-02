@@ -179,12 +179,21 @@ func Test_hooks(t *testing.T) {
 }
 ```
 
+## Why?
+
+Go's built-in testing utilities are pretty good on their own.
+Paired with a library like [`assert`](https://github.com/stretchr/testify#assert-package) and Go testing is pretty dang good.
+
+I think the power of this package comes from how [`Let`](#let) works with [groups](#groups).
+
+
+
 ## RSpec Feature Comparison
 
-| Feature                    | `gspec`                                                                                                         |
-|----------------------------|-----------------------------------------------------------------------------------------------------------------|
-| Example Groups             | ✅                                                                                                               |
-| Let                        | ✅                                                                                                               |
-| Hooks                      | ✅                                                                                                               |
-| Mocks                      | Use an existing mock library, such as https://github.com/uber-go/mock.                                          |
-| Fluent-syntax expectations | `*gspec.Case` exposes assertions from [stretchr/testify](https://github.com/stretchr/testify) via `c.Assert()`. |
+| Feature                    | `gspec`                                                                                                                |
+|----------------------------|------------------------------------------------------------------------------------------------------------------------|
+| Example Groups             | ✅                                                                                                                      |
+| Let                        | ✅                                                                                                                      |
+| Hooks                      | ✅                                                                                                                      |
+| Mocks                      | Use an existing mock library, such as https://github.com/uber-go/mock.                                                 |
+| Fluent-syntax expectations | `*gspec.Case` exposes assertions from [`assert`](https://github.com/stretchr/testify#assert-package) via `c.Assert()`. |
