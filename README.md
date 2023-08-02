@@ -12,6 +12,67 @@ go get github.com/broothie/gspec
 
 ### Basics
 
+`gspec` hooks into Go's built-in testing framework.
+In a test function, `gspec.Describe` or `gspec.Run` are used to open a `gspec` context.
+Then, `c.It` is used to define an actual test case.
+Within a test case, `c.Assert()` returns an 
+[`*assert.Assertions`](https://pkg.go.dev/github.com/stretchr/testify@v1.8.4/assert#Assertions),
+which can be used to make assertions about the code you're testing. 
+
+```go
+package examples
+
+import (
+	"testing"
+
+	"github.com/broothie/gspec"
+)
+
+func Test(t *testing.T) {
+	gspec.Describe(t, "addition", func(c *gspec.Context) {
+		c.It("returns the sum of its operands", func(c *gspec.Case) {
+			c.Assert().Equal(3, 1+2)
+		})
+	})
+}
+```
+
+### Groups
+
+Test cases can be groups together via `c.Describe` and `c.Context`.
+Groups can be nested arbitrarily.
+Groups inherit [`Let`](#let)s and [hooks](#hooks) from their parents.
+
+```go
+package examples
+
+import (
+	"testing"
+
+	"github.com/broothie/gspec"
+)
+
+func Test_groups(t *testing.T) {
+	gspec.Run(t, func(c *gspec.Context) {
+		c.Describe("some subject", func(c *gspec.Context) {
+			c.Context("when in some context", func(c *gspec.Context) {
+				c.It("does something", func(c *gspec.Case) {
+					// Test code, assertions, etc.
+				})
+			})
+		})
+	})
+}
+```
+
+### Let
+
+`gspec.Let` allows you to define type-safe, per-case values.
+Let values are only evaluated if they are used in a test case,
+and are cached for the duration of the test case.
+
+Let values can be overwritten in nested groups, but **their return type must remain the same**.
+
 ```go
 package examples
 
@@ -33,25 +94,24 @@ func Test_capitalize(t *testing.T) {
 		c.It("should capitalize the input", func(c *gspec.Case) {
 			c.Assert().Equal("HELLO", capitalize(input(c)))
 		})
+
+		c.Context("with spaces", func(c *gspec.Context) {
+			input := gspec.Let(c, "input", func(c *gspec.Case) string { return "Hello, world" })
+
+			c.It("should capitalize the input", func(c *gspec.Case) {
+				c.Assert().Equal("HELLO, WORLD", capitalize(input(c)))
+			})
+		})
 	})
 }
 ```
 
-### Groups
-
-```go
-```
-
-### Let
-
-`gspec.Let` allows you to define type-safe, per-case values.
-Let values are cached for the duration of the test case.
-
-```go
-
-```
-
 ### Hooks
+
+`c.BeforeEach` and `c.AfterEach` can be used to register hooks that run around each test case.
+
+
+Hooks are inherited by nested groups.
 
 ```go
 package examples
@@ -69,8 +129,6 @@ func Test_hooks(t *testing.T) {
 	gspec.Run(t, func(c *gspec.Context) {
 		mux := gspec.Let(c, "mux", func(c *gspec.Case) *http.ServeMux { return http.NewServeMux() })
 		server := gspec.Let(c, "server", func(c *gspec.Case) *httptest.Server { return httptest.NewServer(mux(c)) })
-		client := gspec.Let(c, "client", func(c *gspec.Case) *http.Client { return server(c).Client() })
-		url := gspec.Let(c, "url", func(c *gspec.Case) string { return server(c).URL })
 
 		c.BeforeEach(func(c *gspec.Case) {
 			mux(c).HandleFunc("/api/teapot", func(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +141,7 @@ func Test_hooks(t *testing.T) {
 		})
 
 		c.It("serves requests", func(c *gspec.Case) {
-			response, err := client(c).Get(fmt.Sprintf("%s/api/teapot", url(c)))
+			response, err := http.Get(fmt.Sprintf("%s/api/teapot", server(c).URL))
 			c.Assert().NoError(err)
 			c.Assert().Equal(http.StatusTeapot, response.StatusCode)
 		})
@@ -93,20 +151,10 @@ func Test_hooks(t *testing.T) {
 
 ## RSpec Feature Parity
 
-| Feature                    | `rspec` | `gspec`                                                                                                        |
-|----------------------------|---------|----------------------------------------------------------------------------------------------------------------|
-| Example Groups             | ✅       | ✅                                                                                                              |
-| Let                        | ✅       | ✅                                                                                                              |
-| Hooks                      | ✅       | ✅                                                                                                              |
-| Mocks                      | ✅       | Too difficult to build in. Use an existing mock library, such as https://github.com/uber-go/mock.              |
-| Fluent-syntax expectations | ✅       | `*gspec.Case` exposes assertions from [stretchr/testify](https://github.com/stretchr/testify) via `.Assert()`. |
-
-
-## Why?
-
-Go's `*testing.T` does a lot on its own.
-Paired with a package like [`testify`](https://github.com/stretchr/testify) and you've got pretty much all you need for writing basic tests.
-
-So why would we want a framework like `gspec`?
-
-
+| Feature                    | `gspec`                                                                                                        |
+|----------------------------|----------------------------------------------------------------------------------------------------------------|
+| Example Groups             | ✅                                                                                                              |
+| Let                        | ✅                                                                                                              |
+| Hooks                      | ✅                                                                                                              |
+| Mocks                      | Too difficult to build in. Use an existing mock library, such as https://github.com/uber-go/mock.              |
+| Fluent-syntax expectations | `*gspec.Case` exposes assertions from [stretchr/testify](https://github.com/stretchr/testify) via `.Assert()`. |

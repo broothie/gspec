@@ -1,22 +1,15 @@
 package examples
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/broothie/gspec"
 )
 
-func capitalize(input string) string {
-	return strings.ToUpper(input)
-}
-
-func Test_capitalize(t *testing.T) {
-	gspec.Run(t, func(c *gspec.Context) {
-		input := gspec.Let(c, "input", func(c *gspec.Case) string { return "Hello" })
-
-		c.It("should capitalize the input", func(c *gspec.Case) {
-			c.Assert().Equal("HELLO", capitalize(input(c)))
+func Test(t *testing.T) {
+	gspec.Describe(t, "addition", func(c *gspec.Context) {
+		c.It("returns the sum of its operands", func(c *gspec.Case) {
+			c.Assert().Equal(3, 1+2)
 		})
 	})
 }
