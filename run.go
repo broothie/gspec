@@ -1,9 +1,11 @@
+// Package gspec provides a collection of test helpers that form a test framework.
 package gspec
 
 import (
 	"testing"
 )
 
+// Run opens a root test group without a label.
 func Run(t testingT, f ContextFunc) {
 	t.Helper()
 
@@ -13,6 +15,7 @@ func Run(t testingT, f ContextFunc) {
 	context.run(t)
 }
 
+// Describe opens a root test group labelled by the provided subject.
 func Describe(t testingT, subject string, f ContextFunc) {
 	t.Helper()
 

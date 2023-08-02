@@ -1,9 +1,11 @@
 package gspec
 
+// BeforeEach registers a hook to run before each test case.
 func (c *Context) BeforeEach(f CaseFunc) {
 	c.befores = append(c.befores, f)
 }
 
+// AfterEach registers a hook to run after each test case.
 func (c *Context) AfterEach(f CaseFunc) {
 	c.afters = append(c.afters, f)
 }

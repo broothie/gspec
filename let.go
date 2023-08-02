@@ -9,6 +9,13 @@ type (
 	letFunc        func(c *Case) any
 )
 
+// Let defines a value to be retrieved from within a later-defined test case or hook.
+// It returns a function which can be called within a test case or hook to retrieve the value.
+//
+// Let values are only evaluated if they're called within a test case or hook,
+// and the value is cached for the duration of the test case.
+//
+// Let values can be overwritten in nested groups, but their return type must remain the same.
 func Let[T any](c *Context, name string, f LetFunc[T]) LetFunc[T] {
 	c.registerLet(name, func(c *Case) any { return f(c) })
 	return func(c *Case) T { return c.evaluateLet(name).(T) }
