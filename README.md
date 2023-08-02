@@ -43,6 +43,28 @@ func Test(t *testing.T) {
 }
 ```
 
+If you need to access the underlying `*testing.T`, you can do so from within a hook or test case via `c.T()`.
+
+```go
+package examples
+
+import (
+   "testing"
+
+   "github.com/broothie/gspec"
+)
+
+func somethingThatNeedsTestingT(t *testing.T) {}
+
+func Test_t(t *testing.T) {
+   gspec.Describe(t, ".T", func(c *gspec.Context) {
+      c.It("returns a *testing.T", func(c *gspec.Case) {
+         somethingThatNeedsTestingT(c.T())
+      })
+   })
+}
+```
+
 ### Groups
 
 Test cases can be grouped together via `c.Describe` and `c.Context`.
@@ -78,6 +100,8 @@ func Test_groups(t *testing.T) {
 and are cached for the duration of the test case.
 
 `Let` values can be overwritten in nested groups, but **their return type must remain the same**.
+When overwriting a `Let` in this way, the returned function needn't be captured.
+The value will still be registered for the context, even though the function was captured in an outer group.
 
 ```go
 package examples
@@ -157,10 +181,77 @@ func Test_hooks(t *testing.T) {
 
 ## RSpec Feature Comparison
 
-| Feature                    | `gspec`                                                                                                         |
-|----------------------------|-----------------------------------------------------------------------------------------------------------------|
-| Example Groups             | ✅                                                                                                               |
-| Let                        | ✅                                                                                                               |
-| Hooks                      | ✅                                                                                                               |
-| Mocks                      | Use an existing mock library, such as https://github.com/uber-go/mock.                                          |
-| Fluent-syntax expectations | `*gspec.Case` exposes assertions from [stretchr/testify](https://github.com/stretchr/testify) via `c.Assert()`. |
+| Feature                    | `gspec`                                                                                                                |
+|----------------------------|------------------------------------------------------------------------------------------------------------------------|
+| Example Groups             | ✅                                                                                                                      |
+| Let                        | ✅                                                                                                                      |
+| Hooks                      | ✅                                                                                                                      |
+| Mocks                      | Use an existing mock library, such as https://github.com/uber-go/mock.                                                 |
+| Fluent-syntax expectations | `*gspec.Case` exposes assertions from [`assert`](https://github.com/stretchr/testify#assert-package) via `c.Assert()`. |
+
+## Why?
+
+Go's built-in testing utilities are pretty good on their own.
+Paired with a library like [`assert`](https://github.com/stretchr/testify#assert-package) and Go testing is pretty dang good.
+
+I think the power of this package comes from [`Let`](#let), and how it works with [groups](#groups).
+Go's `t.Run` and its use of closures makes it difficult/confusing to define reusable values in an outer scope which can be overwritten in an inner scope.
+Plus, having multiple tests that close over the same value runs the risk of modification of that shared value.
+
+`Let` values are per-case, lazy-evaluated, overwrite-able, and cached for the duration of the test case.
+Since they're overwrite-able, a `Let` can be redefined for a subgroup, even if they're not specifically referenced from within that group's test cases.
+
+```go
+package examples
+
+import (
+  "testing"
+
+  "github.com/broothie/gspec"
+)
+
+type Parser struct {
+  index  int
+  tokens []string
+}
+
+func (p *Parser) IsExhausted() bool {
+  return p.index >= len(p.tokens)
+}
+
+func Test_advanced_let(t *testing.T) {
+  gspec.Describe(t, "Parser", func(c *gspec.Context) {
+    tokens := gspec.Let(c, "tokens", func(c *gspec.Case) []string {
+      return []string{"arg1", "arg2", "-f", "filename"}
+    })
+
+    parser := gspec.Let(c, "parser", func(c *gspec.Case) *Parser { return &Parser{tokens: tokens(c)} })
+
+    c.Describe(".IsExhausted", func(c *gspec.Context) {
+      c.Context("when tokens remain", func(c *gspec.Context) {
+        c.It("is false", func(c *gspec.Case) {
+          c.Assert().False(parser(c).IsExhausted())
+        })
+      })
+
+      c.Context("when no tokens remain", func(c *gspec.Context) {
+        c.BeforeEach(func(c *gspec.Case) {
+          parser(c).index = 4
+        })
+
+        c.It("is true", func(c *gspec.Case) {
+          c.Assert().True(parser(c).IsExhausted())
+        })
+      })
+
+      c.Context("when tokens is empty", func(c *gspec.Context) {
+        gspec.Let(c, "tokens", func(c *gspec.Case) []string { return nil })
+
+        c.It("is true", func(c *gspec.Case) {
+          c.Assert().True(parser(c).IsExhausted())
+        })
+      })
+    })
+  })
+}
+```

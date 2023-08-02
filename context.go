@@ -56,3 +56,20 @@ func (c *Context) joinNames(strs ...string) string {
 		return c.parent.joinNames(strs...)
 	}
 }
+
+func joinNames(strs ...string) string {
+	var result string
+	for _, str := range strs {
+		if str == "" {
+			continue
+		}
+
+		if result != "" && !strings.HasPrefix(str, ".") {
+			result += " "
+		}
+
+		result += str
+	}
+
+	return result
+}
