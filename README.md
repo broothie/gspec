@@ -1,9 +1,10 @@
 # gspec
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/broothie/qst.svg)](https://pkg.go.dev/github.com/broothie/gspec)
+[![Go project version](https://badge.fury.io/go/github.com%2Fbroothie%2Fgspec.svg)](https://badge.fury.io/go/github.com%2Fbroothie%2Fgspec)
 [![Go Report Card](https://goreportcard.com/badge/github.com/broothie/gspec)](https://goreportcard.com/report/github.com/broothie/gspec)
 [![codecov](https://codecov.io/gh/broothie/gspec/branch/main/graph/badge.svg?token=6CLN4sDTk5)](https://codecov.io/gh/broothie/gspec)
 [![gosec](https://github.com/broothie/gspec/actions/workflows/gosec.yml/badge.svg)](https://github.com/broothie/gspec/actions/workflows/gosec.yml)
+[![GitHub](https://img.shields.io/github/license/broothie/gspec)](https://opensource.org/license/mit/)
 
 `gspec` is a testing framework for Go, inspired by Ruby's [`rspec`](http://rspec.info).
 
