@@ -70,6 +70,30 @@ func TestLet(t *testing.T) {
 		})
 	})
 
+	t.Run("nested without function shadowing", func(t *testing.T) {
+		mockT := mocks.NewMocktestingT(gomock.NewController(t))
+		mockT.EXPECT().Helper().AnyTimes()
+
+		allowTestFuncs(mockT, "behavior")
+		allowTestFuncs(mockT, "nested behavior")
+
+		Run(mockT, func(c *Context) {
+			something := Let(c, "something", func(c *Case) string { return "first" })
+
+			c.It("behavior", func(c *Case) {
+				assert.Equal(t, "first", something(c))
+			})
+
+			c.Describe("nested", func(c *Context) {
+				Let(c, "something", func(c *Case) string { return "second" })
+
+				c.It("behavior", func(c *Case) {
+					assert.Equal(t, "second", something(c))
+				})
+			})
+		})
+	})
+
 	t.Run("caching", func(t *testing.T) {
 		mockT := mocks.NewMocktestingT(gomock.NewController(t))
 		mockT.EXPECT().Helper().AnyTimes()

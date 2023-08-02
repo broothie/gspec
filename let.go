@@ -16,6 +16,8 @@ type (
 // and the value is cached for the duration of the test case.
 //
 // Let values can be overwritten in nested groups, but their return type must remain the same.
+// When overwriting a Let in this way, the returned function needn't be captured.
+// The value will still be registered for the context, even though the function was captured in an outer group.
 func Let[T any](c *Context, name string, f LetFunc[T]) LetFunc[T] {
 	c.registerLet(name, func(c *Case) any { return f(c) })
 	return func(c *Case) T { return c.evaluateLet(name).(T) }
