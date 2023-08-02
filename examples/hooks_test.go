@@ -9,7 +9,7 @@ import (
 	"github.com/broothie/gspec"
 )
 
-func Test_Server(t *testing.T) {
+func Test_hooks(t *testing.T) {
 	gspec.Run(t, func(c *gspec.Context) {
 		mux := gspec.Let(c, "mux", func(c *gspec.Case) *http.ServeMux { return http.NewServeMux() })
 		server := gspec.Let(c, "server", func(c *gspec.Case) *httptest.Server { return httptest.NewServer(mux(c)) })

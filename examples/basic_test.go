@@ -18,13 +18,5 @@ func Test_capitalize(t *testing.T) {
 		c.It("should capitalize the input", func(c *gspec.Case) {
 			c.Assert().Equal("HELLO", capitalize(input(c)))
 		})
-
-		c.Context("with spaces", func(c *gspec.Context) {
-			input := gspec.Let(c, "input", func(c *gspec.Case) string { return "Hello, world" })
-
-			c.It("should capitalize the input", func(c *gspec.Case) {
-				c.Assert().Equal("HELLO, WORLD", capitalize(input(c)))
-			})
-		})
 	})
 }
