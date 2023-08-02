@@ -22,23 +22,23 @@ go get github.com/broothie/gspec
 2. Then, `c.It` is used to define an actual test case.
 3. Within a test case, `c.Assert()` returns an
    [`*assert.Assertions`](https://pkg.go.dev/github.com/stretchr/testify@v1.8.4/assert#Assertions),
-   which can be used to make assertions about the code you're testing.
+   which can be used to make assertions about the code under test.
 
 ```go
 package examples
 
 import (
-	"testing"
+   "testing"
 
-	"github.com/broothie/gspec"
+   "github.com/broothie/gspec"
 )
 
 func Test(t *testing.T) {
-	gspec.Describe(t, "addition", func(c *gspec.Context) {
-		c.It("returns the sum of its operands", func(c *gspec.Case) {
-			c.Assert().Equal(3, 1+2)
-		})
-	})
+   gspec.Describe(t, "addition", func(c *gspec.Context) {
+      c.It("returns the sum of its operands", func(c *gspec.Case) {
+         c.Assert().Equal(3, 1+2)
+      })
+   })
 }
 ```
 
@@ -52,21 +52,21 @@ Groups inherit [`Let`](#let)s and [hooks](#hooks) from their parents.
 package examples
 
 import (
-	"testing"
+   "testing"
 
-	"github.com/broothie/gspec"
+   "github.com/broothie/gspec"
 )
 
 func Test_groups(t *testing.T) {
-	gspec.Run(t, func(c *gspec.Context) {
-		c.Describe("some subject", func(c *gspec.Context) {
-			c.Context("when in some context", func(c *gspec.Context) {
-				c.It("does something", func(c *gspec.Case) {
-					// Test code, assertions, etc.
-				})
-			})
-		})
-	})
+   gspec.Run(t, func(c *gspec.Context) {
+      c.Describe("some subject", func(c *gspec.Context) {
+         c.Context("when in some context", func(c *gspec.Context) {
+            c.It("does something", func(c *gspec.Case) {
+               // Test code, assertions, etc.
+            })
+         })
+      })
+   })
 }
 ```
 
@@ -82,32 +82,32 @@ and are cached for the duration of the test case.
 package examples
 
 import (
-	"strings"
-	"testing"
+   "strings"
+   "testing"
 
-	"github.com/broothie/gspec"
+   "github.com/broothie/gspec"
 )
 
 func capitalize(input string) string {
-	return strings.ToUpper(input)
+   return strings.ToUpper(input)
 }
 
 func Test_capitalize(t *testing.T) {
-	gspec.Run(t, func(c *gspec.Context) {
-		input := gspec.Let(c, "input", func(c *gspec.Case) string { return "Hello" })
+   gspec.Run(t, func(c *gspec.Context) {
+      input := gspec.Let(c, "input", func(c *gspec.Case) string { return "Hello" })
 
-		c.It("should capitalize the input", func(c *gspec.Case) {
-			c.Assert().Equal("HELLO", capitalize(input(c)))
-		})
+      c.It("should capitalize the input", func(c *gspec.Case) {
+         c.Assert().Equal("HELLO", capitalize(input(c)))
+      })
 
-		c.Context("with spaces", func(c *gspec.Context) {
-			input := gspec.Let(c, "input", func(c *gspec.Case) string { return "Hello, world" })
+      c.Context("with spaces", func(c *gspec.Context) {
+         input := gspec.Let(c, "input", func(c *gspec.Case) string { return "Hello, world" })
 
-			c.It("should capitalize the input", func(c *gspec.Case) {
-				c.Assert().Equal("HELLO, WORLD", capitalize(input(c)))
-			})
-		})
-	})
+         c.It("should capitalize the input", func(c *gspec.Case) {
+            c.Assert().Equal("HELLO, WORLD", capitalize(input(c)))
+         })
+      })
+   })
 }
 ```
 
@@ -122,39 +122,39 @@ Hooks are inherited by nested groups.
 package examples
 
 import (
-	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"testing"
+   "fmt"
+   "net/http"
+   "net/http/httptest"
+   "testing"
 
-	"github.com/broothie/gspec"
+   "github.com/broothie/gspec"
 )
 
 func Test_hooks(t *testing.T) {
-	gspec.Run(t, func(c *gspec.Context) {
-		mux := gspec.Let(c, "mux", func(c *gspec.Case) *http.ServeMux { return http.NewServeMux() })
-		server := gspec.Let(c, "server", func(c *gspec.Case) *httptest.Server { return httptest.NewServer(mux(c)) })
+   gspec.Run(t, func(c *gspec.Context) {
+      mux := gspec.Let(c, "mux", func(c *gspec.Case) *http.ServeMux { return http.NewServeMux() })
+      server := gspec.Let(c, "server", func(c *gspec.Case) *httptest.Server { return httptest.NewServer(mux(c)) })
 
-		c.BeforeEach(func(c *gspec.Case) {
-			mux(c).HandleFunc("/api/teapot", func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusTeapot)
-			})
-		})
+      c.BeforeEach(func(c *gspec.Case) {
+         mux(c).HandleFunc("/api/teapot", func(w http.ResponseWriter, r *http.Request) {
+            w.WriteHeader(http.StatusTeapot)
+         })
+      })
 
-		c.AfterEach(func(c *gspec.Case) {
-			server(c).Close()
-		})
+      c.AfterEach(func(c *gspec.Case) {
+         server(c).Close()
+      })
 
-		c.It("serves requests", func(c *gspec.Case) {
-			response, err := http.Get(fmt.Sprintf("%s/api/teapot", server(c).URL))
-			c.Assert().NoError(err)
-			c.Assert().Equal(http.StatusTeapot, response.StatusCode)
-		})
-	})
+      c.It("serves requests", func(c *gspec.Case) {
+         response, err := http.Get(fmt.Sprintf("%s/api/teapot", server(c).URL))
+         c.Assert().NoError(err)
+         c.Assert().Equal(http.StatusTeapot, response.StatusCode)
+      })
+   })
 }
 ```
 
-## RSpec Feature Parity
+## RSpec Feature Comparison
 
 | Feature                    | `gspec`                                                                                                         |
 |----------------------------|-----------------------------------------------------------------------------------------------------------------|
