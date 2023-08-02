@@ -72,7 +72,7 @@ func Test_groups(t *testing.T) {
 
 ### Let
 
-`gspec.Let` the definition of type-safe, per-case values.
+`gspec.Let` allows for the definition of type-safe, per-case values.
 `Let` values are only evaluated if they are used in a test case,
 and are cached for the duration of the test case.
 
