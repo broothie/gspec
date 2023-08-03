@@ -50,7 +50,7 @@ func (c *Context) runCase(t testingT, entry caseEntry) {
 
 	entry.run(kase)
 
-	for _, after := range c.allAfters() {
+	for _, after := range reverse(c.allAfters()) {
 		after(kase)
 	}
 }
@@ -61,4 +61,14 @@ func (c *Context) runContexts(t testingT) {
 	for _, context := range c.contexts {
 		context.run(t)
 	}
+}
+
+func reverse[T any](slice []T) []T {
+	result := make([]T, len(slice))
+	for i := 0; i < (len(slice)+1)/2; i++ {
+		result[i] = slice[len(slice)-1-i]
+		result[len(slice)-1-i] = slice[i]
+	}
+
+	return result
 }
