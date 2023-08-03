@@ -55,3 +55,17 @@ func TestContext_runCase(t *testing.T) {
 		assert.Equal(t, calls, 3)
 	})
 }
+
+func Test_reverse(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		assert.Equal(t, reverse([]int{}), []int{})
+	})
+
+	t.Run("even number of items", func(t *testing.T) {
+		assert.Equal(t, reverse([]int{1, 2, 3, 4}), []int{4, 3, 2, 1})
+	})
+
+	t.Run("odd number of items", func(t *testing.T) {
+		assert.Equal(t, reverse([]int{1, 2, 3}), []int{3, 2, 1})
+	})
+}
