@@ -52,9 +52,9 @@ func (c *Context) joinNames(strs ...string) string {
 
 	if c.parent == nil {
 		return strings.TrimSpace(strings.Join(strs, " "))
-	} else {
-		return c.parent.joinNames(strs...)
 	}
+
+	return c.parent.joinNames(strs...)
 }
 
 func joinNames(strs ...string) string {

@@ -3,145 +3,84 @@ package gspec
 import (
 	"testing"
 
-	"github.com/broothie/gspec/mocks"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
+	"github.com/broothie/gspec/testhelp"
 )
 
 func TestLet(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
-		mockT := mocks.NewMocktestingT(gomock.NewController(t))
-		mockT.EXPECT().Helper().AnyTimes()
-
-		allowTestFuncs(mockT, "behavior")
+		mockT := testhelp.NewTestingTMock(t)
+		mockT.ExpectRun("behavior")
 
 		Run(mockT, func(c *Context) {
-			something := Let(c, "something", func(c *Case) string { return "first" })
+			something := c.Let(func(c *Case) string { return "first" })
 
 			c.It("behavior", func(c *Case) {
-				assert.Equal(t, "first", something(c))
+				testhelp.AssertEqual(t, "first", c.Get(something))
 			})
 		})
 	})
 
 	t.Run("parent", func(t *testing.T) {
-		mockT := mocks.NewMocktestingT(gomock.NewController(t))
-		mockT.EXPECT().Helper().AnyTimes()
-
-		allowTestFuncs(mockT, "behavior")
-		allowTestFuncs(mockT, "nested behavior")
+		mockT := testhelp.NewTestingTMock(t)
+		mockT.ExpectRun("behavior")
+		mockT.ExpectRun("nested behavior")
 
 		Run(mockT, func(c *Context) {
-			something := Let(c, "something", func(c *Case) string { return "first" })
+			something := c.Let(func(c *Case) string { return "first" })
 
 			c.It("behavior", func(c *Case) {
-				assert.Equal(t, "first", something(c))
+				testhelp.AssertEqual(t, "first", c.Get(something))
 			})
 
 			c.Describe("nested", func(c *Context) {
 				c.It("behavior", func(c *Case) {
-					assert.Equal(t, "first", something(c))
+					testhelp.AssertEqual(t, "first", c.Get(something))
 				})
 			})
 		})
 	})
 
 	t.Run("nested", func(t *testing.T) {
-		mockT := mocks.NewMocktestingT(gomock.NewController(t))
-		mockT.EXPECT().Helper().AnyTimes()
-
-		allowTestFuncs(mockT, "behavior")
-		allowTestFuncs(mockT, "nested behavior")
+		mockT := testhelp.NewTestingTMock(t)
+		mockT.ExpectRun("behavior")
+		mockT.ExpectRun("nested behavior")
 
 		Run(mockT, func(c *Context) {
-			something := Let(c, "something", func(c *Case) string { return "first" })
+			something := c.Let(func(c *Case) string { return "first" })
 
 			c.It("behavior", func(c *Case) {
-				assert.Equal(t, "first", something(c))
+				testhelp.AssertEqual(t, "first", c.Get(something))
 			})
 
 			c.Describe("nested", func(c *Context) {
-				something := Let(c, "something", func(c *Case) string { return "second" })
+				something := c.Let(func(c *Case) string { return "second" })
 
 				c.It("behavior", func(c *Case) {
-					assert.Equal(t, "second", something(c))
-				})
-			})
-		})
-	})
-
-	t.Run("nested without function shadowing", func(t *testing.T) {
-		mockT := mocks.NewMocktestingT(gomock.NewController(t))
-		mockT.EXPECT().Helper().AnyTimes()
-
-		allowTestFuncs(mockT, "behavior")
-		allowTestFuncs(mockT, "nested behavior")
-
-		Run(mockT, func(c *Context) {
-			something := Let(c, "something", func(c *Case) string { return "first" })
-
-			c.It("behavior", func(c *Case) {
-				assert.Equal(t, "first", something(c))
-			})
-
-			c.Describe("nested", func(c *Context) {
-				Let(c, "something", func(c *Case) string { return "second" })
-
-				c.It("behavior", func(c *Case) {
-					assert.Equal(t, "second", something(c))
+					testhelp.AssertEqual(t, "second", c.Get(something))
 				})
 			})
 		})
 	})
 
 	t.Run("caching", func(t *testing.T) {
-		mockT := mocks.NewMocktestingT(gomock.NewController(t))
-		mockT.EXPECT().Helper().AnyTimes()
-
-		allowTestFuncs(mockT, "behavior")
+		mockT := testhelp.NewTestingTMock(t)
+		mockT.ExpectRun("behavior")
 
 		calls := 0
 		Run(mockT, func(c *Context) {
-			something := Let(c, "something", func(c *Case) string {
-				assert.Equal(t, calls, 0)
+			something := c.Let(func(c *Case) string {
+				testhelp.AssertEqual(t, calls, 0)
 				calls++
 				return "first"
 			})
 
 			c.It("behavior", func(c *Case) {
-				assert.Equal(t, "first", something(c))
-				assert.Equal(t, "first", something(c))
+				testhelp.AssertEqual(t, "first", c.Get(something))
+				testhelp.AssertEqual(t, "first", c.Get(something))
 			})
 		})
 
-		assert.Equal(t, calls, 1)
-	})
-
-	t.Run("type mismatch", func(t *testing.T) {
-		mockT := mocks.NewMocktestingT(gomock.NewController(t))
-		mockT.EXPECT().Helper().AnyTimes()
-
-		allowTestFuncs(mockT, "behavior")
-		allowTestFuncs(mockT, "when string behavior")
-
-		expected := `Let "value" overwritten with different types: int, string`
-		assert.PanicsWithValue(t, expected, func() {
-			Run(mockT, func(c *Context) {
-				value := Let(c, "value", func(c *Case) int { return 10 })
-
-				c.It("behavior", func(c *Case) {
-					c.Assert().Equal(10, value(c))
-				})
-
-				c.Context("when string", func(c *Context) {
-					Let(c, "value", func(c *Case) string { return "10" })
-
-					c.It("behavior", func(c *Case) {
-						c.Assert().Equal("10", value(c))
-					})
-				})
-			})
-		})
+		testhelp.AssertEqual(t, calls, 1)
 	})
 }
 
@@ -158,7 +97,7 @@ func TestContext_findLet(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, "child value", context.findLet("some-let")(nil))
+		testhelp.AssertEqual(t, "child value", context.findLet("some-let")(nil))
 	})
 
 	t.Run("found in parent", func(t *testing.T) {
@@ -171,7 +110,7 @@ func TestContext_findLet(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, "parent value", context.findLet("some-let")(nil))
+		testhelp.AssertEqual(t, "parent value", context.findLet("some-let")(nil))
 	})
 
 	t.Run("undefined", func(t *testing.T) {
@@ -180,6 +119,17 @@ func TestContext_findLet(t *testing.T) {
 			parent: &Context{lets: make(map[string]letFunc)},
 		}
 
-		assert.Panics(t, func() { context.findLet("some-let") })
+		recoverCalled := false
+		defer func() {
+			testhelp.AssertEqual(t, recoverCalled, true)
+		}()
+
+		defer func() {
+			if value := recover(); value != nil {
+				recoverCalled = true
+			}
+		}()
+
+		context.findLet("some-let")
 	})
 }

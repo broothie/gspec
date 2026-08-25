@@ -2,6 +2,7 @@ package gspec
 
 import (
 	"fmt"
+	"uuid"
 )
 
 type (
@@ -9,51 +10,38 @@ type (
 	letFunc        func(c *Case) any
 )
 
-// Let defines a value to be retrieved from within a later-defined test case or hook.
-// It returns a function which can be called within a test case or hook to retrieve the value.
-//
-// Let values are only evaluated if they're called within a test case or hook,
-// and the value is cached for the duration of the test case.
-//
-// Let values can be overwritten in nested groups, but their return type must remain the same.
-// When overwriting a Let in this way, the returned function needn't be captured.
-// The value will still be registered for the context, even though the function was captured in an outer group.
-func Let[T any](c *Context, name string, f LetFunc[T]) LetFunc[T] {
-	c.registerLet(name, func(c *Case) any { return f(c) })
-
-	return func(c *Case) T {
-		value := c.evaluateLet(name)
-		cast, ok := value.(T)
-		if !ok {
-			var t T
-			panic(fmt.Sprintf("Let %q overwritten with different types: %T, %T", name, t, value))
-		}
-
-		return cast
-	}
+type Let[T any] struct {
+	id string
 }
 
-func (c *Context) registerLet(name string, f letFunc) {
-	c.lets[name] = f
+func (c *Context) Let[T any](letFunc LetFunc[T]) Let[T] {
+	id := uuid.New().String()
+	c.lets[id] = func(c *Case) any { return letFunc(c) }
+
+	return Let[T]{id: id}
 }
 
-func (c *Context) findLet(name string) letFunc {
-	if value, ok := c.lets[name]; ok {
+func (c *Context) Set[T any](let Let[T], letFunc LetFunc[T]) {
+	c.lets[let.id] = func(c *Case) any { return letFunc(c) }
+}
+
+func (c *Context) findLet(id string) letFunc {
+	if value, ok := c.lets[id]; ok {
 		return value
 	} else if c.parent != nil {
-		return c.parent.findLet(name)
-	} else {
-		panic(fmt.Sprintf("no Let defined with name %q", name))
+		return c.parent.findLet(id)
 	}
+
+	panic(fmt.Sprintf("no Let defined with name %q", id))
 }
 
-func (c *Case) evaluateLet(name string) any {
-	if value, ok := c.lets[name]; ok {
-		return value
+func (c *Case) Get[T any](let Let[T]) T {
+	if value, ok := c.letValues[let.id]; ok {
+		return value.(T)
 	}
 
-	let := c.context.findLet(name)
-	value := let(c)
-	c.lets[name] = value
-	return value
+	letFunc := c.context.findLet(let.id)
+	value := letFunc(c)
+	c.letValues[let.id] = value
+	return value.(T)
 }
