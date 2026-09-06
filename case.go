@@ -8,8 +8,7 @@ import (
 // *Context.AfterEach.
 type CaseFunc func(c *Case)
 
-// Case provides a handle for test cases to make assertions via *Case.Assert.
-// It also provides *Case.Require for assertions that immediately fail the test case.
+// Case provides access to a test case's *testing.T and lazily evaluated Let values.
 type Case struct {
 	testingT  testingT
 	context   *Context

@@ -56,13 +56,12 @@ func (m *TestingTMock) ExpectRun(name string) {
 // Helper implements the helper method required by gspec's test runner.
 func (m *TestingTMock) Helper() {}
 
-// Run executes f when name is allowed or was registered as an expected run.
+// Run executes f as a subtest when name is allowed or was registered as an expected run.
 func (m *TestingTMock) Run(name string, f func(t *testing.T)) bool {
 	m.t.Helper()
 
 	if m.expectAllRuns {
-		f(new(testing.T))
-		return true
+		return m.t.Run(name, f)
 	}
 
 	index := slices.IndexFunc(m.runs, func(run run) bool { return run.name == name })
@@ -71,7 +70,6 @@ func (m *TestingTMock) Run(name string, f func(t *testing.T)) bool {
 		return false
 	}
 
-	f(new(testing.T))
 	m.runs[index].called = true
-	return true
+	return m.t.Run(name, f)
 }
