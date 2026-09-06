@@ -17,7 +17,7 @@ func Equal[T comparable](expected T) gspec.MatcherFunc[T] {
 	}
 }
 
-func Include[E comparable](element E) gspec.MatcherFunc[[]E] {
+func Contain[E comparable](element E) gspec.MatcherFunc[[]E] {
 	return func(actual []E) gspec.MatchResult {
 		return gspec.MatchResult{
 			IsMatch:              slices.Index(actual, element) != -1,

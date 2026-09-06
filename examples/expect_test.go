@@ -22,11 +22,11 @@ func Test_assertions(t *testing.T) {
 		fruits := c.Let(func(c *gspec.Case) []string { return []string{"apple", "banana", "cherry"} })
 
 		c.It("should work", func(c *gspec.Case) {
-			c.Expect(c.Get(ints)).To(match.Include(2))
-			c.Expect(c.Get(ints)).NotTo(match.Include(4))
+			c.Expect(c.Get(ints)).To(match.Contain(2))
+			c.Expect(c.Get(ints)).NotTo(match.Contain(4))
 
-			c.Expect(c.Get(fruits)).To(match.Include("banana"))
-			c.Expect(c.Get(fruits)).NotTo(match.Include("date"))
+			c.Expect(c.Get(fruits)).To(match.Contain("banana"))
+			c.Expect(c.Get(fruits)).NotTo(match.Contain("date"))
 		})
 	})
 }
