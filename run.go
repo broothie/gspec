@@ -42,7 +42,7 @@ func (c *Context) runCases(t testingT) {
 func (c *Context) runCase(t testingT, entry caseEntry) {
 	t.Helper()
 
-	kase := &Case{context: c, testingT: t, lets: make(map[string]any)}
+	kase := &Case{context: c, testingT: t, letValues: make(map[string]any)}
 
 	for _, before := range c.allBefores() {
 		before(kase)

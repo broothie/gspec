@@ -7,27 +7,28 @@ import (
 	"testing"
 
 	"github.com/broothie/gspec"
+	"github.com/broothie/gspec/testhelp"
 )
 
 func Test_hooks(t *testing.T) {
 	gspec.Run(t, func(c *gspec.Context) {
-		mux := gspec.Let(c, "mux", func(c *gspec.Case) *http.ServeMux { return http.NewServeMux() })
-		server := gspec.Let(c, "server", func(c *gspec.Case) *httptest.Server { return httptest.NewServer(mux(c)) })
+		mux := c.Let(func(c *gspec.Case) *http.ServeMux { return http.NewServeMux() })
+		server := c.Let(func(c *gspec.Case) *httptest.Server { return httptest.NewServer(c.Get(mux)) })
 
 		c.BeforeEach(func(c *gspec.Case) {
-			mux(c).HandleFunc("/api/teapot", func(w http.ResponseWriter, r *http.Request) {
+			c.Get(mux).HandleFunc("/api/teapot", func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusTeapot)
 			})
 		})
 
 		c.AfterEach(func(c *gspec.Case) {
-			server(c).Close()
+			c.Get(server).Close()
 		})
 
 		c.It("serves requests", func(c *gspec.Case) {
-			response, err := http.Get(fmt.Sprintf("%s/api/teapot", server(c).URL))
-			c.Assert().NoError(err)
-			c.Assert().Equal(http.StatusTeapot, response.StatusCode)
+			response, err := http.Get(fmt.Sprintf("%s/api/teapot", c.Get(server).URL))
+			testhelp.AssertEqual(c.T(), nil, err)
+			testhelp.AssertEqual(c.T(), http.StatusTeapot, response.StatusCode)
 		})
 	})
 }

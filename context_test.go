@@ -3,16 +3,12 @@ package gspec
 import (
 	"testing"
 
-	"github.com/broothie/gspec/mocks"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
+	"github.com/broothie/gspec/testhelp"
 )
 
 func TestContext(t *testing.T) {
-	mockT := mocks.NewMocktestingT(gomock.NewController(t))
-	mockT.EXPECT().Helper().AnyTimes()
-
-	allowTestFuncs(mockT, "subject context behavior")
+	mockT := testhelp.NewTestingTMock(t)
+	mockT.ExpectRun("subject context behavior")
 
 	Describe(mockT, "subject", func(c *Context) {
 		c.Context("context", func(c *Context) {
@@ -32,25 +28,25 @@ func TestContext_joinNames(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "top middle bottom case", context.joinNames("case"))
+	testhelp.AssertEqual(t, "top middle bottom case", context.joinNames("case"))
 }
 
 func Test_joinNames(t *testing.T) {
 	t.Run("receiver first", func(t *testing.T) {
 		strs := []string{"*Object", ".method", "when some context", "behaves some way"}
 
-		assert.Equal(t, "*Object.method when some context behaves some way", joinNames(strs...))
+		testhelp.AssertEqual(t, "*Object.method when some context behaves some way", joinNames(strs...))
 	})
 
 	t.Run("receiver in the middle", func(t *testing.T) {
 		strs := []string{"objects", "*Object", ".method", "behaves some way"}
 
-		assert.Equal(t, "objects *Object.method behaves some way", joinNames(strs...))
+		testhelp.AssertEqual(t, "objects *Object.method behaves some way", joinNames(strs...))
 	})
 
 	t.Run("empty value in the middle", func(t *testing.T) {
 		strs := []string{"objects", "*Object", ".method", "", "behaves some way"}
 
-		assert.Equal(t, "objects *Object.method behaves some way", joinNames(strs...))
+		testhelp.AssertEqual(t, "objects *Object.method behaves some way", joinNames(strs...))
 	})
 }

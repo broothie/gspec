@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/broothie/gspec"
+	"github.com/broothie/gspec/testhelp"
 )
 
 func capitalize(input string) string {
@@ -13,17 +14,17 @@ func capitalize(input string) string {
 
 func Test_capitalize(t *testing.T) {
 	gspec.Run(t, func(c *gspec.Context) {
-		input := gspec.Let(c, "input", func(c *gspec.Case) string { return "Hello" })
+		input := c.Let(func(c *gspec.Case) string { return "Hello" })
 
 		c.It("should capitalize the input", func(c *gspec.Case) {
-			c.Assert().Equal("HELLO", capitalize(input(c)))
+			testhelp.AssertEqual(c.T(), "HELLO", capitalize(c.Get(input)))
 		})
 
 		c.Context("with spaces", func(c *gspec.Context) {
-			gspec.Let(c, "input", func(c *gspec.Case) string { return "Hello, world" })
+			input := c.Let(func(c *gspec.Case) string { return "Hello, world" })
 
 			c.It("should capitalize the input", func(c *gspec.Case) {
-				c.Assert().Equal("HELLO, WORLD", capitalize(input(c)))
+				testhelp.AssertEqual(c.T(), "HELLO, WORLD", capitalize(c.Get(input)))
 			})
 		})
 	})
