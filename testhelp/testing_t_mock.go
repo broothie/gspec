@@ -17,6 +17,7 @@ type run struct {
 	called bool
 }
 
+// NewTestingTMock returns a test runner that reports unexpected and missing runs to t.
 func NewTestingTMock(t *testing.T) *TestingTMock {
 	t.Helper()
 
@@ -42,16 +43,20 @@ func NewTestingTMock(t *testing.T) *TestingTMock {
 	return mock
 }
 
+// ExpectAllRuns allows every run without requiring it to be registered in advance.
 func (m *TestingTMock) ExpectAllRuns() {
 	m.expectAllRuns = true
 }
 
+// ExpectRun registers the name of a run expected by the mock.
 func (m *TestingTMock) ExpectRun(name string) {
 	m.runs = append(m.runs, run{name: name})
 }
 
+// Helper implements the helper method required by gspec's test runner.
 func (m *TestingTMock) Helper() {}
 
+// Run executes f when name is allowed or was registered as an expected run.
 func (m *TestingTMock) Run(name string, f func(t *testing.T)) bool {
 	m.t.Helper()
 
