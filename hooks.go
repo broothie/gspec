@@ -12,16 +12,18 @@ func (c *Context) AfterEach(f CaseFunc) {
 
 func (c *Context) allBefores() []CaseFunc {
 	if c.parent == nil {
-		return c.befores
+		return append([]CaseFunc(nil), c.befores...)
 	}
 
-	return append(c.parent.allBefores(), c.befores...)
+	befores := c.parent.allBefores()
+	return append(befores, c.befores...)
 }
 
 func (c *Context) allAfters() []CaseFunc {
 	if c.parent == nil {
-		return c.afters
+		return append([]CaseFunc(nil), c.afters...)
 	}
 
-	return append(c.parent.allAfters(), c.afters...)
+	afters := c.parent.allAfters()
+	return append(afters, c.afters...)
 }

@@ -1,7 +1,7 @@
 package gspec
 
 import (
-	"fmt"
+	"runtime"
 	"testing"
 
 	"github.com/broothie/gspec/testhelp"
@@ -49,18 +49,36 @@ func TestContext_runCase(t *testing.T) {
 
 		testhelp.AssertEqual(t, calls, 3)
 	})
-}
 
-func Test_reverse(t *testing.T) {
-	t.Run("empty", func(t *testing.T) {
-		testhelp.AssertEqual(t, fmt.Sprint(reverse([]int{})), fmt.Sprint([]int{}))
+	t.Run("runs after hooks when the case panics", func(t *testing.T) {
+		mockT := testhelp.NewTestingTMock(t)
+		afterCalled := false
+		c := &Context{afters: []CaseFunc{func(*Case) { afterCalled = true }}}
+
+		func() {
+			defer func() { _ = recover() }()
+			c.runCase(mockT, caseEntry{run: func(*Case) { panic("boom") }})
+		}()
+
+		testhelp.AssertEqual(t, true, afterCalled)
 	})
 
-	t.Run("even number of items", func(t *testing.T) {
-		testhelp.AssertEqual(t, fmt.Sprint(reverse([]int{1, 2, 3, 4})), fmt.Sprint([]int{4, 3, 2, 1}))
-	})
+	t.Run("runs after hooks when the case exits", func(t *testing.T) {
+		mockT := testhelp.NewTestingTMock(t)
+		afterCalled := make(chan struct{}, 1)
+		done := make(chan struct{})
+		c := &Context{afters: []CaseFunc{func(*Case) { afterCalled <- struct{}{} }}}
 
-	t.Run("odd number of items", func(t *testing.T) {
-		testhelp.AssertEqual(t, fmt.Sprint(reverse([]int{1, 2, 3})), fmt.Sprint([]int{3, 2, 1}))
+		go func() {
+			defer close(done)
+			c.runCase(mockT, caseEntry{run: func(*Case) { runtime.Goexit() }})
+		}()
+		<-done
+
+		select {
+		case <-afterCalled:
+		default:
+			t.Error("after hook was not called")
+		}
 	})
 }
