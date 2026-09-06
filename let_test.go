@@ -69,7 +69,6 @@ func TestLet(t *testing.T) {
 		calls := 0
 		Run(mockT, func(c *Context) {
 			something := c.Let(func(c *Case) string {
-				testhelp.AssertEqual(t, calls, 0)
 				calls++
 				return "first"
 			})
@@ -80,7 +79,75 @@ func TestLet(t *testing.T) {
 			})
 		})
 
-		testhelp.AssertEqual(t, calls, 1)
+		testhelp.AssertEqual(t, 1, calls)
+	})
+}
+
+func TestSet(t *testing.T) {
+	t.Run("basic", func(t *testing.T) {
+		mockT := testhelp.NewTestingTMock(t)
+		mockT.ExpectRun("behavior")
+		mockT.ExpectRun("when second behavior")
+
+		Run(mockT, func(c *Context) {
+			something := c.Let(func(c *Case) string { return "first" })
+			somethingElse := c.Let(func(c *Case) string { return c.Get(something) + " thing" })
+
+			c.It("behavior", func(c *Case) {
+				testhelp.AssertEqual(t, "first thing", c.Get(somethingElse))
+			})
+
+			c.Context("when second", func(c *Context) {
+				c.Set(something, func(c *Case) string { return "second" })
+
+				c.It("behavior", func(c *Case) {
+					testhelp.AssertEqual(t, "second thing", c.Get(somethingElse))
+				})
+			})
+		})
+	})
+
+	t.Run("caching", func(t *testing.T) {
+		mockT := testhelp.NewTestingTMock(t)
+		mockT.ExpectRun("behavior")
+		mockT.ExpectRun("when second behavior")
+
+		firstCalls := 0
+		thingCalls := 0
+		secondCalls := 0
+
+		Run(mockT, func(c *Context) {
+			something := c.Let(func(c *Case) string {
+				firstCalls++
+				return "first"
+			})
+
+			somethingElse := c.Let(func(c *Case) string {
+				thingCalls++
+				return c.Get(something) + " thing"
+			})
+
+			c.It("behavior", func(c *Case) {
+				testhelp.AssertEqual(t, "first thing", c.Get(somethingElse))
+				testhelp.AssertEqual(t, "first thing", c.Get(somethingElse)) // Should be cached
+			})
+
+			c.Context("when second", func(c *Context) {
+				c.Set(something, func(c *Case) string {
+					secondCalls++
+					return "second"
+				})
+
+				c.It("behavior", func(c *Case) {
+					testhelp.AssertEqual(t, "second thing", c.Get(somethingElse))
+					testhelp.AssertEqual(t, "second thing", c.Get(somethingElse)) // Should be cached
+				})
+			})
+		})
+
+		testhelp.AssertEqual(t, 1, firstCalls)
+		testhelp.AssertEqual(t, 2, thingCalls)
+		testhelp.AssertEqual(t, 1, secondCalls)
 	})
 }
 
