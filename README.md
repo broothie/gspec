@@ -136,7 +136,7 @@ gspec.Expect(t, actual).To(Equal(expected))
 | Collections | `BeEmpty`, `HaveLength`, `Contain`, `ConsistOf` |
 | Strings | `ContainSubstring`, `HavePrefix`, `HaveSuffix`, `MatchRegexp` |
 | Errors | `HaveOccurred`, `BeError`, `BeErrorType` |
-| Actions | `Change`, `Panic`, `PanicWith` |
+| Actions | `Panic`, `PanicWith` |
 
 Some matcher semantics are worth calling out:
 
@@ -144,7 +144,6 @@ Some matcher semantics are worth calling out:
 - `Contain` requires every expected element to be present.
 - `ConsistOf` ignores order, but duplicate elements remain significant.
 - `BeError` uses `errors.Is`; `BeErrorType` uses `errors.As`.
-- `Change` evaluates a value before and after running an action.
 - `PanicWith` deeply compares the recovered panic value.
 
 Most matcher types are inferred from their arguments. Matchers whose value type does not appear in an argument need an explicit type argument:
