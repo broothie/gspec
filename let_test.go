@@ -11,10 +11,10 @@ func TestLet(t *testing.T) {
 		mockT := testhelp.NewTestingTMock(t)
 		mockT.ExpectRun("behavior")
 
-		Run(mockT, func(c *Context) {
-			something := c.Let(func(c *Case) string { return "first" })
+		Run(mockT, func(c *TestContext) {
+			something := c.Let(func(c *TestCase) string { return "first" })
 
-			c.It("behavior", func(c *Case) {
+			c.It("behavior", func(c *TestCase) {
 				testhelp.AssertEqual(t, "first", c.Get(something))
 			})
 		})
@@ -25,15 +25,15 @@ func TestLet(t *testing.T) {
 		mockT.ExpectRun("behavior")
 		mockT.ExpectRun("nested behavior")
 
-		Run(mockT, func(c *Context) {
-			something := c.Let(func(c *Case) string { return "first" })
+		Run(mockT, func(c *TestContext) {
+			something := c.Let(func(c *TestCase) string { return "first" })
 
-			c.It("behavior", func(c *Case) {
+			c.It("behavior", func(c *TestCase) {
 				testhelp.AssertEqual(t, "first", c.Get(something))
 			})
 
-			c.Describe("nested", func(c *Context) {
-				c.It("behavior", func(c *Case) {
+			c.Describe("nested", func(c *TestContext) {
+				c.It("behavior", func(c *TestCase) {
 					testhelp.AssertEqual(t, "first", c.Get(something))
 				})
 			})
@@ -45,17 +45,17 @@ func TestLet(t *testing.T) {
 		mockT.ExpectRun("behavior")
 		mockT.ExpectRun("nested behavior")
 
-		Run(mockT, func(c *Context) {
-			something := c.Let(func(c *Case) string { return "first" })
+		Run(mockT, func(c *TestContext) {
+			something := c.Let(func(c *TestCase) string { return "first" })
 
-			c.It("behavior", func(c *Case) {
+			c.It("behavior", func(c *TestCase) {
 				testhelp.AssertEqual(t, "first", c.Get(something))
 			})
 
-			c.Describe("nested", func(c *Context) {
-				something := c.Let(func(c *Case) string { return "second" })
+			c.Describe("nested", func(c *TestContext) {
+				something := c.Let(func(c *TestCase) string { return "second" })
 
-				c.It("behavior", func(c *Case) {
+				c.It("behavior", func(c *TestCase) {
 					testhelp.AssertEqual(t, "second", c.Get(something))
 				})
 			})
@@ -67,13 +67,13 @@ func TestLet(t *testing.T) {
 		mockT.ExpectRun("behavior")
 
 		calls := 0
-		Run(mockT, func(c *Context) {
-			something := c.Let(func(c *Case) string {
+		Run(mockT, func(c *TestContext) {
+			something := c.Let(func(c *TestCase) string {
 				calls++
 				return "first"
 			})
 
-			c.It("behavior", func(c *Case) {
+			c.It("behavior", func(c *TestCase) {
 				testhelp.AssertEqual(t, "first", c.Get(something))
 				testhelp.AssertEqual(t, "first", c.Get(something))
 			})
@@ -89,18 +89,18 @@ func TestSet(t *testing.T) {
 		mockT.ExpectRun("behavior")
 		mockT.ExpectRun("when second behavior")
 
-		Run(mockT, func(c *Context) {
-			something := c.Let(func(c *Case) string { return "first" })
-			somethingElse := c.Let(func(c *Case) string { return c.Get(something) + " thing" })
+		Run(mockT, func(c *TestContext) {
+			something := c.Let(func(c *TestCase) string { return "first" })
+			somethingElse := c.Let(func(c *TestCase) string { return c.Get(something) + " thing" })
 
-			c.It("behavior", func(c *Case) {
+			c.It("behavior", func(c *TestCase) {
 				testhelp.AssertEqual(t, "first thing", c.Get(somethingElse))
 			})
 
-			c.Context("when second", func(c *Context) {
-				c.Set(something, func(c *Case) string { return "second" })
+			c.Context("when second", func(c *TestContext) {
+				c.Set(something, func(c *TestCase) string { return "second" })
 
-				c.It("behavior", func(c *Case) {
+				c.It("behavior", func(c *TestCase) {
 					testhelp.AssertEqual(t, "second thing", c.Get(somethingElse))
 				})
 			})
@@ -116,29 +116,29 @@ func TestSet(t *testing.T) {
 		thingCalls := 0
 		secondCalls := 0
 
-		Run(mockT, func(c *Context) {
-			something := c.Let(func(c *Case) string {
+		Run(mockT, func(c *TestContext) {
+			something := c.Let(func(c *TestCase) string {
 				firstCalls++
 				return "first"
 			})
 
-			somethingElse := c.Let(func(c *Case) string {
+			somethingElse := c.Let(func(c *TestCase) string {
 				thingCalls++
 				return c.Get(something) + " thing"
 			})
 
-			c.It("behavior", func(c *Case) {
+			c.It("behavior", func(c *TestCase) {
 				testhelp.AssertEqual(t, "first thing", c.Get(somethingElse))
 				testhelp.AssertEqual(t, "first thing", c.Get(somethingElse)) // Should be cached
 			})
 
-			c.Context("when second", func(c *Context) {
-				c.Set(something, func(c *Case) string {
+			c.Context("when second", func(c *TestContext) {
+				c.Set(something, func(c *TestCase) string {
 					secondCalls++
 					return "second"
 				})
 
-				c.It("behavior", func(c *Case) {
+				c.It("behavior", func(c *TestCase) {
 					testhelp.AssertEqual(t, "second thing", c.Get(somethingElse))
 					testhelp.AssertEqual(t, "second thing", c.Get(somethingElse)) // Should be cached
 				})
@@ -153,13 +153,13 @@ func TestSet(t *testing.T) {
 
 func TestContext_findLet(t *testing.T) {
 	t.Run("found", func(t *testing.T) {
-		context := &Context{
+		context := &TestContext{
 			lets: map[string]letFunc{
-				"some-let": func(c *Case) any { return "child value" },
+				"some-let": func(c *TestCase) any { return "child value" },
 			},
-			parent: &Context{
+			parent: &TestContext{
 				lets: map[string]letFunc{
-					"some-let": func(c *Case) any { return "parent value" },
+					"some-let": func(c *TestCase) any { return "parent value" },
 				},
 			},
 		}
@@ -168,11 +168,11 @@ func TestContext_findLet(t *testing.T) {
 	})
 
 	t.Run("found in parent", func(t *testing.T) {
-		context := &Context{
+		context := &TestContext{
 			lets: make(map[string]letFunc),
-			parent: &Context{
+			parent: &TestContext{
 				lets: map[string]letFunc{
-					"some-let": func(c *Case) any { return "parent value" },
+					"some-let": func(c *TestCase) any { return "parent value" },
 				},
 			},
 		}
@@ -181,9 +181,9 @@ func TestContext_findLet(t *testing.T) {
 	})
 
 	t.Run("undefined", func(t *testing.T) {
-		context := &Context{
+		context := &TestContext{
 			lets:   make(map[string]letFunc),
-			parent: &Context{lets: make(map[string]letFunc)},
+			parent: &TestContext{lets: make(map[string]letFunc)},
 		}
 
 		recoverCalled := false

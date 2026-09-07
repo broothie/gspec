@@ -6,59 +6,63 @@ import (
 )
 
 // Run opens a root test group without a label.
-func Run(t testingT, f ContextFunc) {
+func Run(t testingT, f TestContextFunc) {
 	t.Helper()
 
-	context := &Context{lets: make(map[string]letFunc)}
+	context := &TestContext{lets: make(map[string]letFunc)}
 	f(context)
 
 	context.run(t)
 }
 
 // Describe opens a root test group labelled by the provided subject.
-func Describe(t testingT, subject string, f ContextFunc) {
+func Describe(t testingT, subject string, f TestContextFunc) {
 	t.Helper()
 
-	Run(t, func(c *Context) { c.Describe(subject, f) })
+	Run(t, func(t *TestContext) { t.Describe(subject, f) })
 }
 
-func (c *Context) run(t testingT) {
-	t.Helper()
+func (t *TestContext) run(runner testingT) {
+	runner.Helper()
 
-	c.runCases(t)
-	c.runContexts(t)
+	t.runCases(runner)
+	t.runContexts(runner)
 }
 
-func (c *Context) runCases(t testingT) {
-	t.Helper()
+func (t *TestContext) runCases(runner testingT) {
+	runner.Helper()
 
-	for _, entry := range c.cases {
-		t.Run(c.joinNames(entry.name), func(t *testing.T) {
-			c.runCase(t, entry)
+	for _, entry := range t.cases {
+		runner.Run(t.joinNames(entry.name), func(testingT *testing.T) {
+			t.runCase(testingT, entry)
 		})
 	}
 }
 
-func (c *Context) runCase(t testingT, entry caseEntry) {
-	t.Helper()
+func (t *TestContext) runCase(testingT *testing.T, entry caseEntry) {
+	testingT.Helper()
 
-	kase := &Case{context: c, testingT: t, letValues: make(map[string]any)}
-
-	for _, after := range c.allAfters() {
-		defer after(kase)
+	testCase := &TestCase{
+		T:         testingT,
+		context:   t,
+		letValues: make(map[string]any),
 	}
 
-	for _, before := range c.allBefores() {
-		before(kase)
+	for _, after := range t.allAfters() {
+		defer after(testCase)
 	}
 
-	entry.run(kase)
+	for _, before := range t.allBefores() {
+		before(testCase)
+	}
+
+	entry.run(testCase)
 }
 
-func (c *Context) runContexts(t testingT) {
-	t.Helper()
+func (t *TestContext) runContexts(runner testingT) {
+	runner.Helper()
 
-	for _, context := range c.contexts {
-		context.run(t)
+	for _, context := range t.contexts {
+		context.run(runner)
 	}
 }

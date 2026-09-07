@@ -11,13 +11,13 @@ func TestContext_BeforeEach(t *testing.T) {
 	mockT.ExpectRun("tests")
 
 	calls := 0
-	Run(mockT, func(c *Context) {
-		c.BeforeEach(func(c *Case) {
+	Run(mockT, func(c *TestContext) {
+		c.BeforeEach(func(c *TestCase) {
 			testhelp.AssertEqual(t, calls, 0)
 			calls++
 		})
 
-		c.It("tests", func(c *Case) {
+		c.It("tests", func(c *TestCase) {
 			testhelp.AssertEqual(t, calls, 1)
 			calls++
 		})
@@ -31,13 +31,13 @@ func TestContext_AfterEach(t *testing.T) {
 	mockT.ExpectRun("tests")
 
 	calls := 0
-	Run(mockT, func(c *Context) {
-		c.AfterEach(func(c *Case) {
+	Run(mockT, func(c *TestContext) {
+		c.AfterEach(func(c *TestCase) {
 			testhelp.AssertEqual(t, calls, 1)
 			calls++
 		})
 
-		c.It("tests", func(c *Case) {
+		c.It("tests", func(c *TestCase) {
 			testhelp.AssertEqual(t, calls, 0)
 			calls++
 		})
@@ -48,17 +48,17 @@ func TestContext_AfterEach(t *testing.T) {
 
 func TestContext_allBeforesDoesNotAliasParentStorage(t *testing.T) {
 	called := ""
-	parentBefores := make([]CaseFunc, 0, 2)
-	parentBefores = append(parentBefores, func(*Case) {})
-	parent := &Context{befores: parentBefores}
+	parentBefores := make([]TestCaseFunc, 0, 2)
+	parentBefores = append(parentBefores, func(*TestCase) {})
+	parent := &TestContext{befores: parentBefores}
 
-	first := (&Context{
+	first := (&TestContext{
 		parent:  parent,
-		befores: []CaseFunc{func(*Case) { called = "first" }},
+		befores: []TestCaseFunc{func(*TestCase) { called = "first" }},
 	}).allBefores()
-	_ = (&Context{
+	_ = (&TestContext{
 		parent:  parent,
-		befores: []CaseFunc{func(*Case) { called = "second" }},
+		befores: []TestCaseFunc{func(*TestCase) { called = "second" }},
 	}).allBefores()
 
 	first[1](nil)
@@ -67,17 +67,17 @@ func TestContext_allBeforesDoesNotAliasParentStorage(t *testing.T) {
 
 func TestContext_allAftersDoesNotAliasParentStorage(t *testing.T) {
 	called := ""
-	parentAfters := make([]CaseFunc, 0, 2)
-	parentAfters = append(parentAfters, func(*Case) {})
-	parent := &Context{afters: parentAfters}
+	parentAfters := make([]TestCaseFunc, 0, 2)
+	parentAfters = append(parentAfters, func(*TestCase) {})
+	parent := &TestContext{afters: parentAfters}
 
-	first := (&Context{
+	first := (&TestContext{
 		parent: parent,
-		afters: []CaseFunc{func(*Case) { called = "first" }},
+		afters: []TestCaseFunc{func(*TestCase) { called = "first" }},
 	}).allAfters()
-	_ = (&Context{
+	_ = (&TestContext{
 		parent: parent,
-		afters: []CaseFunc{func(*Case) { called = "second" }},
+		afters: []TestCaseFunc{func(*TestCase) { called = "second" }},
 	}).allAfters()
 
 	first[1](nil)
@@ -85,19 +85,19 @@ func TestContext_allAftersDoesNotAliasParentStorage(t *testing.T) {
 }
 
 func TestContext_AfterEachSupportsParallelNestedCases(t *testing.T) {
-	Run(t, func(c *Context) {
+	Run(t, func(c *TestContext) {
 		// Keep spare capacity in the root slice, which previously allowed nested
 		// contexts to overwrite shared hook storage.
-		c.afters = make([]CaseFunc, 0, 4)
-		c.AfterEach(func(*Case) {})
-		c.AfterEach(func(*Case) {})
-		c.AfterEach(func(*Case) {})
+		c.afters = make([]TestCaseFunc, 0, 4)
+		c.AfterEach(func(*TestCase) {})
+		c.AfterEach(func(*TestCase) {})
+		c.AfterEach(func(*TestCase) {})
 
 		for i := range 20 {
-			c.Context(string(rune('a'+i)), func(c *Context) {
-				c.AfterEach(func(*Case) {})
-				c.It("runs in parallel", func(c *Case) {
-					c.T().Parallel()
+			c.Context(string(rune('a'+i)), func(c *TestContext) {
+				c.AfterEach(func(*TestCase) {})
+				c.It("runs in parallel", func(t *TestCase) {
+					t.Parallel()
 				})
 			})
 		}

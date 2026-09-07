@@ -4,18 +4,13 @@ import (
 	"testing"
 )
 
-// CaseFunc is the signature of functions passed in (typically anonymously) to *Context.It, *Context.BeforeEach, and
-// *Context.AfterEach.
-type CaseFunc func(c *Case)
+// TestCaseFunc is the signature of functions passed in (typically anonymously) to *TestContext.It,
+// *TestContext.BeforeEach, and *TestContext.AfterEach.
+type TestCaseFunc func(t *TestCase)
 
-// Case provides access to a test case's *testing.T and lazily evaluated Let values.
-type Case struct {
-	testingT  testingT
-	context   *Context
+// TestCase provides access to a test case's *testing.T and lazily evaluated Let values.
+type TestCase struct {
+	*testing.T
+	context   *TestContext
 	letValues map[string]any
-}
-
-// T provides the test case's underlying *testing.T.
-func (c *Case) T() *testing.T {
-	return c.testingT.(*testing.T)
 }

@@ -4,55 +4,55 @@ import (
 	"strings"
 )
 
-// ContextFunc is the signature of functions passed in (typically anonymously) to gspec.Run, gspec.Describe,
-// *Context.Describe, and *Context.Context.
-type ContextFunc func(c *Context)
+// TestContextFunc is the signature of functions passed in (typically anonymously) to gspec.Run, gspec.Describe,
+// *TestContext.Describe, and *TestContext.Context.
+type TestContextFunc func(t *TestContext)
 
-// Context provides a handle for test groups to define test cases, nested groups, lets, and hooks.
-type Context struct {
-	parent *Context
+// TestContext provides a handle for test groups to define test cases, nested groups, lets, and hooks.
+type TestContext struct {
+	parent *TestContext
 	name   string
 
 	lets     map[string]letFunc
-	befores  []CaseFunc
-	afters   []CaseFunc
+	befores  []TestCaseFunc
+	afters   []TestCaseFunc
 	cases    []caseEntry
-	contexts []*Context
+	contexts []*TestContext
 }
 
 type caseEntry struct {
 	name string
-	run  CaseFunc
+	run  TestCaseFunc
 }
 
 // Describe defines a nested group labelled with the provided subject.
-func (c *Context) Describe(subject string, f ContextFunc) {
-	c.Context(subject, f)
+func (t *TestContext) Describe(subject string, f TestContextFunc) {
+	t.Context(subject, f)
 }
 
 // Context defines a nested group labelled with the provided context.
 // Context labels typically begin with "when", "with", or "without".
-func (c *Context) Context(context string, f ContextFunc) {
-	ctx := &Context{parent: c, name: context, lets: make(map[string]letFunc)}
-	c.contexts = append(c.contexts, ctx)
+func (t *TestContext) Context(context string, f TestContextFunc) {
+	ctx := &TestContext{parent: t, name: context, lets: make(map[string]letFunc)}
+	t.contexts = append(t.contexts, ctx)
 
 	f(ctx)
 }
 
 // It defines a test case labelled with the provided behavior.
-func (c *Context) It(behavior string, f CaseFunc) {
-	c.cases = append(c.cases, caseEntry{
+func (t *TestContext) It(behavior string, f TestCaseFunc) {
+	t.cases = append(t.cases, caseEntry{
 		name: behavior,
 		run:  f,
 	})
 }
 
-func (c *Context) joinNames(strs ...string) string {
-	strs = append([]string{c.name}, strs...)
+func (t *TestContext) joinNames(strs ...string) string {
+	strs = append([]string{t.name}, strs...)
 
-	if c.parent == nil {
+	if t.parent == nil {
 		return strings.TrimSpace(strings.Join(strs, " "))
 	}
 
-	return c.parent.joinNames(strs...)
+	return t.parent.joinNames(strs...)
 }

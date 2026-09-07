@@ -6,23 +6,23 @@ import (
 	"github.com/broothie/gspec/testhelp"
 )
 
-func TestContext(t *testing.T) {
+func TestTestContext(t *testing.T) {
 	mockT := testhelp.NewTestingTMock(t)
 	mockT.ExpectRun("subject context behavior")
 
-	Describe(mockT, "subject", func(c *Context) {
-		c.Context("context", func(c *Context) {
-			c.It("behavior", func(c *Case) {})
+	Describe(mockT, "subject", func(c *TestContext) {
+		c.Context("context", func(c *TestContext) {
+			c.It("behavior", func(c *TestCase) {})
 		})
 	})
 }
 
 func TestContext_joinNames(t *testing.T) {
-	context := &Context{
+	context := &TestContext{
 		name: "bottom",
-		parent: &Context{
+		parent: &TestContext{
 			name: "middle",
-			parent: &Context{
+			parent: &TestContext{
 				name: "top",
 			},
 		},

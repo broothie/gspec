@@ -9,13 +9,12 @@ import (
 
 func TestContext_runCase(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
-		mockT := testhelp.NewTestingTMock(t)
 		called := false
 
-		c := &Context{name: "some context"}
-		c.runCase(mockT, caseEntry{
+		c := &TestContext{name: "some context"}
+		c.runCase(t, caseEntry{
 			name: "case",
-			run: func(c *Case) {
+			run: func(c *TestCase) {
 				called = true
 			},
 		})
@@ -24,24 +23,23 @@ func TestContext_runCase(t *testing.T) {
 	})
 
 	t.Run("with hooks", func(t *testing.T) {
-		mockT := testhelp.NewTestingTMock(t)
 		calls := 0
 
-		c := &Context{
+		c := &TestContext{
 			name: "some context",
-			befores: []CaseFunc{func(c *Case) {
+			befores: []TestCaseFunc{func(c *TestCase) {
 				testhelp.AssertEqual(t, calls, 0)
 				calls++
 			}},
-			afters: []CaseFunc{func(c *Case) {
+			afters: []TestCaseFunc{func(c *TestCase) {
 				testhelp.AssertEqual(t, calls, 2)
 				calls++
 			}},
 		}
 
-		c.runCase(mockT, caseEntry{
+		c.runCase(t, caseEntry{
 			name: "case",
-			run: func(c *Case) {
+			run: func(c *TestCase) {
 				testhelp.AssertEqual(t, calls, 1)
 				calls++
 			},
@@ -51,27 +49,25 @@ func TestContext_runCase(t *testing.T) {
 	})
 
 	t.Run("runs after hooks when the case panics", func(t *testing.T) {
-		mockT := testhelp.NewTestingTMock(t)
 		afterCalled := false
-		c := &Context{afters: []CaseFunc{func(*Case) { afterCalled = true }}}
+		c := &TestContext{afters: []TestCaseFunc{func(*TestCase) { afterCalled = true }}}
 
 		func() {
 			defer func() { _ = recover() }()
-			c.runCase(mockT, caseEntry{run: func(*Case) { panic("boom") }})
+			c.runCase(t, caseEntry{run: func(*TestCase) { panic("boom") }})
 		}()
 
 		testhelp.AssertEqual(t, true, afterCalled)
 	})
 
 	t.Run("runs after hooks when the case exits", func(t *testing.T) {
-		mockT := testhelp.NewTestingTMock(t)
 		afterCalled := make(chan struct{}, 1)
 		done := make(chan struct{})
-		c := &Context{afters: []CaseFunc{func(*Case) { afterCalled <- struct{}{} }}}
+		c := &TestContext{afters: []TestCaseFunc{func(*TestCase) { afterCalled <- struct{}{} }}}
 
 		go func() {
 			defer close(done)
-			c.runCase(mockT, caseEntry{run: func(*Case) { runtime.Goexit() }})
+			c.runCase(t, caseEntry{run: func(*TestCase) { runtime.Goexit() }})
 		}()
 		<-done
 
