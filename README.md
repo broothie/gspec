@@ -18,8 +18,6 @@ go get github.com/broothie/gspec
 
 ## Quick start
 
-Matchers are designed to read naturally when the `match` package is dot-imported:
-
 ```go
 package calculator_test
 
@@ -27,7 +25,7 @@ import (
 	"testing"
 
 	"github.com/broothie/gspec"
-	. "github.com/broothie/gspec/match"
+	. "github.com/broothie/gspec/match" // Matchers are designed to read naturally when the `match` package is dot-imported
 )
 
 func TestAddition(t *testing.T) {
