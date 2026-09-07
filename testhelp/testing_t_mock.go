@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+// TestingTMock is a test runner that records and validates expected subtests.
 type TestingTMock struct {
 	t             *testing.T
 	expectAllRuns bool
