@@ -6,7 +6,9 @@
 [![gosec](https://github.com/broothie/gspec/actions/workflows/gosec.yml/badge.svg)](https://github.com/broothie/gspec/actions/workflows/gosec.yml)
 [![GitHub](https://img.shields.io/github/license/broothie/gspec)](https://opensource.org/license/mit/)
 
-`gspec` is a testing framework for Go, inspired by Ruby's [`rspec`](http://rspec.info).
+`gspec` is a testing framework for Go inspired by Ruby's [RSpec](https://rspec.info/). It adds nested example groups, lazy per-case values, hooks, and fluent expectations while continuing to use Go's built-in `testing` package.
+
+`gspec` requires Go 1.27 or later and has no third-party runtime dependencies.
 
 ## Installation
 
@@ -14,262 +16,183 @@
 go get github.com/broothie/gspec
 ```
 
-## Usage
+## Quick start
 
-### Basics
-
-`gspec` hooks into Go's built-in testing framework.
-1. In regular Go test function, `gspec.Describe` or `gspec.Run` are used to open a `gspec` context.
-2. Then, `c.It` is used to define an actual test case.
-3. Within a test case, `c.T()` returns the underlying `*testing.T`, which can be
-   used directly or passed to an assertion library.
+Matchers are designed to read naturally when the `match` package is dot-imported:
 
 ```go
-package examples
+package calculator_test
 
 import (
-   "testing"
+	"testing"
 
-   "github.com/broothie/gspec"
+	"github.com/broothie/gspec"
+	. "github.com/broothie/gspec/match"
 )
 
-func Test(t *testing.T) {
-   gspec.Describe(t, "addition", func(c *gspec.Context) {
-      c.It("returns the sum of its operands", func(c *gspec.Case) {
-         if got, want := 1+2, 3; got != want {
-            c.T().Errorf("got %d, want %d", got, want)
-         }
-      })
-   })
+func TestAddition(t *testing.T) {
+	gspec.Describe(t, "addition", func(c *gspec.Context) {
+		c.It("returns the sum of its operands", func(c *gspec.Case) {
+			c.Expect(1 + 2).To(Equal(3))
+			c.Expect(1 + 2).NotTo(Equal(4))
+		})
+	})
 }
 ```
 
-If you need to access the underlying `*testing.T`, you can do so from within a hook or test case via `c.T()`.
+`gspec.Describe` opens a labelled root group. Use `gspec.Run` when the root does not need a label. Each call to `It` becomes a normal Go subtest, so existing `go test` tooling continues to work.
+
+## Groups
+
+Use `Describe` to name a subject and `Context` to describe a condition. Groups can be nested arbitrarily and inherit lets and hooks from their parents.
 
 ```go
-package examples
-
-import (
-   "testing"
-
-   "github.com/broothie/gspec"
-)
-
-func somethingThatNeedsTestingT(t *testing.T) {}
-
-func Test_t(t *testing.T) {
-   gspec.Describe(t, ".T", func(c *gspec.Context) {
-      c.It("returns a *testing.T", func(c *gspec.Case) {
-         somethingThatNeedsTestingT(c.T())
-      })
-   })
+func TestGreeting(t *testing.T) {
+	gspec.Run(t, func(c *gspec.Context) {
+		c.Describe("Greeting", func(c *gspec.Context) {
+			c.Context("when a name is present", func(c *gspec.Context) {
+				c.It("includes the name", func(c *gspec.Case) {
+					c.Expect("Hello, Gopher!").To(ContainSubstring("Gopher"))
+				})
+			})
+		})
+	})
 }
 ```
 
-### Groups
+## Lazy values
 
-Test cases can be grouped together via `c.Describe` and `c.Context`.
-Groups can be nested arbitrarily.
-Groups inherit [`Let`](#let)s and [hooks](#hooks) from their parents.
+`Let` defines a type-safe value that is evaluated only when a case first calls `Get`. The result is cached for the rest of that case and evaluated independently for every other case.
+
+Nested groups can override a let with `Set`. Lets may also depend on other lets:
 
 ```go
-package examples
+func TestGreeting(t *testing.T) {
+	gspec.Describe(t, "Greeting", func(c *gspec.Context) {
+		name := c.Let(func(c *gspec.Case) string { return "Gopher" })
+		greeting := c.Let(func(c *gspec.Case) string {
+			return "Hello, " + c.Get(name) + "!"
+		})
 
-import (
-   "testing"
+		c.It("greets the default name", func(c *gspec.Case) {
+			c.Expect(c.Get(greeting)).To(Equal("Hello, Gopher!"))
+		})
 
-   "github.com/broothie/gspec"
-)
+		c.Context("with another name", func(c *gspec.Context) {
+			c.Set(name, func(c *gspec.Case) string { return "Rubyist" })
 
-func Test_groups(t *testing.T) {
-   gspec.Run(t, func(c *gspec.Context) {
-      c.Describe("some subject", func(c *gspec.Context) {
-         c.Context("when in some context", func(c *gspec.Context) {
-            c.It("does something", func(c *gspec.Case) {
-               // Test code, assertions, etc.
-            })
-         })
-      })
-   })
+			c.It("uses the overridden name", func(c *gspec.Case) {
+				c.Expect(c.Get(greeting)).To(Equal("Hello, Rubyist!"))
+			})
+		})
+	})
 }
 ```
 
-### Let
+## Hooks
 
-`c.Let` allows for the definition of type-safe, per-case values.
-`Let` values are only evaluated if they are used in a test case,
-and are cached for the duration of the test case.
-
-`Let` values can be overwritten in nested groups with `c.Set`. Their return
-type remains type-safe because `Set` receives the handle returned by `Let`.
+`BeforeEach` and `AfterEach` register setup and cleanup functions. Hooks are inherited by nested groups and receive the current `Case`, allowing them to access lets with `Get`.
 
 ```go
-package examples
+gspec.Run(t, func(c *gspec.Context) {
+	values := c.Let(func(c *gspec.Case) *[]int { return &[]int{} })
 
-import (
-   "strings"
-   "testing"
+	c.BeforeEach(func(c *gspec.Case) {
+		caseValues := c.Get(values)
+		*caseValues = append(*caseValues, 1)
+	})
 
-   "github.com/broothie/gspec"
-)
+	c.AfterEach(func(c *gspec.Case) {
+		*c.Get(values) = nil
+	})
 
-func capitalize(input string) string {
-   return strings.ToUpper(input)
-}
-
-func Test_capitalize(t *testing.T) {
-   gspec.Run(t, func(c *gspec.Context) {
-      input := c.Let(func(c *gspec.Case) string { return "Hello" })
-
-      c.It("should capitalize the input", func(c *gspec.Case) {
-         if got, want := capitalize(c.Get(input)), "HELLO"; got != want {
-            c.T().Errorf("got %q, want %q", got, want)
-         }
-      })
-
-      c.Context("with spaces", func(c *gspec.Context) {
-         c.Set(input, func(c *gspec.Case) string { return "Hello, world" })
-
-         c.It("should capitalize the input", func(c *gspec.Case) {
-            if got, want := capitalize(c.Get(input)), "HELLO, WORLD"; got != want {
-               c.T().Errorf("got %q, want %q", got, want)
-            }
-         })
-      })
-   })
-}
+	c.It("runs between the hooks", func(c *gspec.Case) {
+		c.Expect(*c.Get(values)).To(Contain(1))
+	})
+})
 ```
 
-### Hooks
+See the executable [hooks example](./examples/hooks_test.go) for a complete setup and cleanup flow.
 
-`c.BeforeEach` and `c.AfterEach` can be used to register hooks that run around each test case.
+## Expectations
 
-
-Hooks are inherited by nested groups.
+Inside a case, `Expect` captures an actual value. `To` reports a failure when its matcher does not match, while `NotTo` reports a failure when it does.
 
 ```go
-package examples
-
-import (
-   "fmt"
-   "net/http"
-   "net/http/httptest"
-   "testing"
-
-   "github.com/broothie/gspec"
-)
-
-func Test_hooks(t *testing.T) {
-   gspec.Run(t, func(c *gspec.Context) {
-      mux := c.Let(func(c *gspec.Case) *http.ServeMux { return http.NewServeMux() })
-      server := c.Let(func(c *gspec.Case) *httptest.Server {
-         return httptest.NewServer(c.Get(mux))
-      })
-
-      c.BeforeEach(func(c *gspec.Case) {
-         c.Get(mux).HandleFunc("/api/teapot", func(w http.ResponseWriter, r *http.Request) {
-            w.WriteHeader(http.StatusTeapot)
-         })
-      })
-
-      c.AfterEach(func(c *gspec.Case) {
-         c.Get(server).Close()
-      })
-
-      c.It("serves requests", func(c *gspec.Case) {
-         response, err := http.Get(fmt.Sprintf("%s/api/teapot", c.Get(server).URL))
-         if err != nil {
-            c.T().Fatal(err)
-         }
-         if got, want := response.StatusCode, http.StatusTeapot; got != want {
-            c.T().Errorf("got status %d, want %d", got, want)
-         }
-      })
-   })
-}
+c.Expect(actual).To(Equal(expected))
+c.Expect(actual).NotTo(Equal(unexpected))
 ```
 
-## RSpec Feature Comparison
+Outside a `Case`, the package-level form reports to any compatible test value:
 
-| Feature                    | `gspec`                                                                                                                |
-|----------------------------|------------------------------------------------------------------------------------------------------------------------|
-| Example Groups             | ✅                                                                                                                      |
-| Let                        | ✅                                                                                                                      |
-| Hooks                      | ✅                                                                                                                      |
-| Mocks                      | Use an existing mock library, such as https://github.com/uber-go/mock.                                                 |
-| Fluent-syntax expectations | Use Go's testing API through `c.T()`, or pass it to an assertion library.                                      |
+```go
+gspec.Expect(t, actual).To(Equal(expected))
+```
+
+### Matchers
+
+| Category | Matchers |
+| --- | --- |
+| Values | `Equal`, `BeNil`, `Satisfy` |
+| Ordering | `BeLessThan`, `BeAtMost`, `BeGreaterThan`, `BeAtLeast`, `BeCloseTo` |
+| Collections | `BeEmpty`, `HaveLength`, `Contain`, `ConsistOf` |
+| Strings | `ContainSubstring`, `HavePrefix`, `HaveSuffix`, `MatchRegexp` |
+| Errors | `HaveOccurred`, `BeError`, `BeErrorType` |
+| Actions | `Change`, `Panic`, `PanicWith` |
+
+Some matcher semantics are worth calling out:
+
+- `Equal` performs deep equality, so it supports slices and maps.
+- `Contain` requires every expected element to be present.
+- `ConsistOf` ignores order, but duplicate elements remain significant.
+- `BeError` uses `errors.Is`; `BeErrorType` uses `errors.As`.
+- `Change` evaluates a value before and after running an action.
+- `PanicWith` deeply compares the recovered panic value.
+
+Most matcher types are inferred from their arguments. Matchers whose value type does not appear in an argument need an explicit type argument:
+
+```go
+c.Expect(pointer).To(BeNil[*Widget]())
+c.Expect(values).To(BeEmpty[[]int]())
+c.Expect(values).To(HaveLength[[]int](3))
+c.Expect(err).To(BeErrorType[*ValidationError]())
+```
+
+For a one-off assertion, `Satisfy` accepts a description and a typed predicate:
+
+```go
+c.Expect(4).To(Satisfy("be even", func(value int) bool {
+	return value%2 == 0
+}))
+```
+
+See the executable [expectations example](./examples/expect_test.go) for every built-in matcher.
+
+## Accessing `testing.T`
+
+`Case.T` returns the underlying `*testing.T` when a test needs an API outside gspec:
+
+```go
+c.It("uses a testing helper", func(c *gspec.Case) {
+	somethingThatNeedsTestingT(c.T())
+})
+```
+
+## RSpec feature comparison
+
+| Feature | `gspec` |
+| --- | --- |
+| Example groups | Supported with `Describe`, `Context`, and `It` |
+| Lazy values | Supported with `Let`, `Get`, and `Set` |
+| Hooks | Supported with `BeforeEach` and `AfterEach` |
+| Fluent expectations | Supported with `Expect`, `To`, and `NotTo` |
+| Matchers | Built-in typed matchers and custom predicates with `Satisfy` |
+| Mocks | Use a dedicated Go mocking library |
 
 ## Why?
 
-Go's built-in testing utilities are pretty good on their own.
-Paired with an assertion library, Go testing is pretty dang good.
+Go's built-in testing tools are intentionally small and effective. The value of gspec is organization: related cases can share descriptions, hooks, and declarations without sharing mutable values.
 
-I think the power of this package comes from [`Let`](#let), and how it works with [groups](#groups).
-Go's `t.Run` and its use of closures makes it difficult/confusing to define reusable values in an outer scope which can be overwritten in an inner scope.
-Plus, having multiple tests that close over the same value runs the risk of modification of that shared value.
+Each `Let` is lazy, cached only within its current case, and overridable in a nested group. This makes it possible to describe variations of a subject without manually coordinating closure state between subtests.
 
-`Let` values are per-case, lazy-evaluated, overwrite-able, and cached for the duration of the test case.
-Since they're overwrite-able, a `Let` can be redefined for a subgroup, even if they're not specifically referenced from within that group's test cases.
-
-```go
-package examples
-
-import (
-  "testing"
-
-  "github.com/broothie/gspec"
-)
-
-type Parser struct {
-  index  int
-  tokens []string
-}
-
-func (p *Parser) IsExhausted() bool {
-  return p.index >= len(p.tokens)
-}
-
-func Test_advanced_let(t *testing.T) {
-  gspec.Describe(t, "Parser", func(c *gspec.Context) {
-    tokens := c.Let(func(c *gspec.Case) []string {
-      return []string{"arg1", "arg2", "-f", "filename"}
-    })
-
-    parser := c.Let(func(c *gspec.Case) *Parser {
-      return &Parser{tokens: c.Get(tokens)}
-    })
-
-    c.Describe(".IsExhausted", func(c *gspec.Context) {
-      c.Context("when tokens remain", func(c *gspec.Context) {
-        c.It("is false", func(c *gspec.Case) {
-          if c.Get(parser).IsExhausted() {
-            c.T().Error("expected parser not to be exhausted")
-          }
-        })
-      })
-
-      c.Context("when no tokens remain", func(c *gspec.Context) {
-        c.BeforeEach(func(c *gspec.Case) {
-          c.Get(parser).index = 4
-        })
-
-        c.It("is true", func(c *gspec.Case) {
-          if !c.Get(parser).IsExhausted() {
-            c.T().Error("expected parser to be exhausted")
-          }
-        })
-      })
-
-      c.Context("when tokens is empty", func(c *gspec.Context) {
-        c.Set(tokens, func(c *gspec.Case) []string { return nil })
-
-        c.It("is true", func(c *gspec.Case) {
-          if !c.Get(parser).IsExhausted() {
-            c.T().Error("expected parser to be exhausted")
-          }
-        })
-      })
-    })
-  })
-}
-```
+More complete, runnable demonstrations are available in the [`examples` directory](./examples).
