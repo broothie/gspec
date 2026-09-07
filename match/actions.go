@@ -7,21 +7,6 @@ import (
 	"github.com/broothie/gspec"
 )
 
-// Change matches actions that change the value returned by evaluator.
-func Change[A any, Evaluator func() A](evaluator Evaluator) gspec.MatcherFunc[func()] {
-	return func(action func()) gspec.MatchResult {
-		before := evaluator()
-		action()
-		after := evaluator()
-
-		return gspec.MatchResult{
-			IsMatch:              !reflect.DeepEqual(before, after),
-			FailureReason:        fmt.Sprintf("expected action to change %v", before),
-			NegatedFailureReason: fmt.Sprintf("expected action not to change %v but was changed to %v", before, after),
-		}
-	}
-}
-
 // Panic matches actions that panic.
 func Panic() gspec.MatcherFunc[func()] {
 	return func(action func()) gspec.MatchResult {

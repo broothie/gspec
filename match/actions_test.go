@@ -2,14 +2,6 @@ package match
 
 import "testing"
 
-func TestChange(t *testing.T) {
-	value := []int{1}
-	matcher := Change(func() []int { return value })
-
-	assertMatches(t, matcher, func() { value = append(value, 2) }, true)
-	assertMatches(t, matcher, func() {}, false)
-}
-
 func TestPanic(t *testing.T) {
 	assertMatches(t, Panic(), func() { panic("failed") }, true)
 	assertMatches(t, Panic(), func() {}, false)

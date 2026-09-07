@@ -85,13 +85,6 @@ func TestExpectations(t *testing.T) {
 		})
 
 		t.Describe("action matchers", func(t *gspec.TestContext) {
-			t.It("observes changes", func(t *gspec.TestCase) {
-				value := 1
-
-				t.Expect(func() { value++ }).To(Change(func() int { return value }))
-				t.Expect(func() {}).NotTo(Change(func() int { return value }))
-			})
-
 			t.It("observes panics", func(t *gspec.TestCase) {
 				t.Expect(func() { panic("boom") }).To(Panic())
 				t.Expect(func() { panic("boom") }).To(PanicWith("boom"))
