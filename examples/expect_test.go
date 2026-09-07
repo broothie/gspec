@@ -7,58 +7,95 @@ import (
 	"testing"
 
 	"github.com/broothie/gspec"
-	"github.com/broothie/gspec/match"
+	. "github.com/broothie/gspec/match"
 )
 
-func Test_assertions(t *testing.T) {
+type validationError struct {
+	field string
+}
+
+func (e *validationError) Error() string {
+	return fmt.Sprintf("%s is invalid", e.field)
+}
+
+func TestExpectations(t *testing.T) {
 	gspec.Run(t, func(c *gspec.Context) {
-		c.Describe("addition", func(c *gspec.Context) {
-			one := c.Let(func(c *gspec.Case) int { return 1 })
+		c.Describe("value matchers", func(c *gspec.Context) {
+			c.It("compares values structurally", func(c *gspec.Case) {
+				c.Expect([]int{1, 2}).To(Equal([]int{1, 2}))
+				c.Expect(map[string]int{"one": 1}).NotTo(Equal(map[string]int{"two": 2}))
+			})
 
-			c.It("should sum numbers", func(c *gspec.Case) {
-				c.Expect(c.Get(one) + 1).NotTo(match.Equal(1))
-				c.Expect(c.Get(one) + 1).To(match.Equal(2))
+			c.It("recognizes nil values", func(c *gspec.Case) {
+				var pointer *int
+				c.Expect(pointer).To(BeNil[*int]())
+			})
+
+			c.It("accepts custom predicates", func(c *gspec.Case) {
+				isEven := func(value int) bool { return value%2 == 0 }
+				c.Expect(4).To(Satisfy("be even", isEven))
 			})
 		})
 
-		c.Describe("regexp", func(c *gspec.Context) {
-			subject := c.Let(func(c *gspec.Case) string { return "hello" })
-			re := c.Let(func(c *gspec.Case) *regexp.Regexp { return regexp.MustCompile(`ll`) })
+		c.Describe("ordering matchers", func(c *gspec.Context) {
+			c.It("compares ordered values", func(c *gspec.Case) {
+				c.Expect(2).To(BeLessThan(3))
+				c.Expect(2).To(BeAtMost(2))
+				c.Expect(3).To(BeGreaterThan(2))
+				c.Expect(3).To(BeAtLeast(3))
+			})
 
-			c.It("matches regexps", func(c *gspec.Case) {
-				c.Expect(c.Get(subject)).To(match.MatchRegexp(c.Get(re)))
+			c.It("compares floating-point values within a tolerance", func(c *gspec.Case) {
+				c.Expect(3.1415).To(BeCloseTo(3.14, 0.01))
 			})
 		})
 
-		c.Describe("contain", func(c *gspec.Context) {
-			ints := c.Let(func(c *gspec.Case) []int { return []int{1, 2, 3} })
-			fruits := c.Let(func(c *gspec.Case) []string { return []string{"apple", "banana", "cherry"} })
+		c.Describe("collection matchers", func(c *gspec.Context) {
+			c.It("checks collection contents and size", func(c *gspec.Case) {
+				values := []int{1, 2, 3}
 
-			c.It("should work", func(c *gspec.Case) {
-				c.Expect(c.Get(ints)).To(match.Contain(2))
-				c.Expect(c.Get(ints)).NotTo(match.Contain(4))
-
-				c.Expect(c.Get(fruits)).To(match.Contain("banana"))
-				c.Expect(c.Get(fruits)).NotTo(match.Contain("date"))
+				c.Expect(values).To(Contain(1, 3))
+				c.Expect(values).To(ConsistOf(3, 2, 1))
+				c.Expect(values).To(HaveLength[[]int](3))
+				c.Expect([]int{}).To(BeEmpty[[]int]())
 			})
 		})
 
-		c.Describe("errors", func(c *gspec.Context) {
-			anError := c.Let(func(c *gspec.Case) error { return errors.New("something happened") })
-			theError := c.Let(func(c *gspec.Case) error { return fmt.Errorf("the error: %w", c.Get(anError)) })
+		c.Describe("string matchers", func(c *gspec.Context) {
+			c.It("checks literal and regular-expression patterns", func(c *gspec.Case) {
+				value := "hello, world"
 
-			c.It("checks for error matches", func(c *gspec.Case) {
-				c.Expect(c.Get(theError)).To(match.BeError(c.Get(anError)))
+				c.Expect(value).To(ContainSubstring("lo, wo"))
+				c.Expect(value).To(HavePrefix("hello"))
+				c.Expect(value).To(HaveSuffix("world"))
+				c.Expect(value).To(MatchRegexp(regexp.MustCompile(`^hello, \w+$`)))
 			})
 		})
 
-		c.Describe("change", func(c *gspec.Context) {
-			c.It("tests for changes", func(c *gspec.Case) {
+		c.Describe("error matchers", func(c *gspec.Context) {
+			c.It("checks error presence, identity, and type", func(c *gspec.Case) {
+				target := errors.New("not found")
+				wrapped := fmt.Errorf("lookup failed: %w", target)
+				typed := fmt.Errorf("validation failed: %w", &validationError{field: "name"})
+
+				c.Expect(wrapped).To(HaveOccurred())
+				c.Expect(wrapped).To(BeError(target))
+				c.Expect(typed).To(BeErrorType[*validationError]())
+			})
+		})
+
+		c.Describe("action matchers", func(c *gspec.Context) {
+			c.It("observes changes", func(c *gspec.Case) {
 				value := 1
-				valuePtr := &value
 
-				c.Expect(func() { *valuePtr += 1 }).To(match.Change(func() int { return *valuePtr }))
-				c.Expect(func() { *valuePtr += 0 }).NotTo(match.Change(func() int { return *valuePtr }))
+				c.Expect(func() { value++ }).To(Change(func() int { return value }))
+				c.Expect(func() {}).NotTo(Change(func() int { return value }))
+			})
+
+			c.It("observes panics", func(c *gspec.Case) {
+				c.Expect(func() { panic("boom") }).To(Panic())
+				c.Expect(func() { panic("boom") }).To(PanicWith("boom"))
+				c.Expect(func() {}).NotTo(Panic())
 			})
 		})
 	})

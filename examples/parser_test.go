@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/broothie/gspec"
-	"github.com/broothie/gspec/testhelp"
+	. "github.com/broothie/gspec/match"
 )
 
 type Parser struct {
@@ -16,7 +16,7 @@ func (p *Parser) IsExhausted() bool {
 	return p.index >= len(p.tokens)
 }
 
-func Test_advanced_let(t *testing.T) {
+func TestAdvancedLet(t *testing.T) {
 	gspec.Describe(t, "Parser", func(c *gspec.Context) {
 		tokens := c.Let(func(c *gspec.Case) []string {
 			return []string{"arg1", "arg2", "-f", "filename"}
@@ -27,7 +27,7 @@ func Test_advanced_let(t *testing.T) {
 		c.Describe(".IsExhausted", func(c *gspec.Context) {
 			c.Context("when tokens remain", func(c *gspec.Context) {
 				c.It("is false", func(c *gspec.Case) {
-					testhelp.AssertEqual(c.T(), c.Get(parser).IsExhausted(), false)
+					c.Expect(c.Get(parser).IsExhausted()).To(Equal(false))
 				})
 			})
 
@@ -37,7 +37,7 @@ func Test_advanced_let(t *testing.T) {
 				})
 
 				c.It("is true", func(c *gspec.Case) {
-					testhelp.AssertEqual(c.T(), c.Get(parser).IsExhausted(), true)
+					c.Expect(c.Get(parser).IsExhausted()).To(Equal(true))
 				})
 			})
 
@@ -45,7 +45,7 @@ func Test_advanced_let(t *testing.T) {
 				c.Set(tokens, func(c *gspec.Case) []string { return nil })
 
 				c.It("is true", func(c *gspec.Case) {
-					testhelp.AssertEqual(c.T(), c.Get(parser).IsExhausted(), true)
+					c.Expect(c.Get(parser).IsExhausted()).To(Equal(true))
 				})
 			})
 		})
