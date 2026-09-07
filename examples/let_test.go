@@ -5,26 +5,26 @@ import (
 	"testing"
 
 	"github.com/broothie/gspec"
-	"github.com/broothie/gspec/testhelp"
+	. "github.com/broothie/gspec/match"
 )
 
 func capitalize(input string) string {
 	return strings.ToUpper(input)
 }
 
-func Test_capitalize(t *testing.T) {
+func TestLet(t *testing.T) {
 	gspec.Run(t, func(c *gspec.Context) {
 		input := c.Let(func(c *gspec.Case) string { return "Hello" })
 
-		c.It("should capitalize the input", func(c *gspec.Case) {
-			testhelp.AssertEqual(c.T(), "HELLO", capitalize(c.Get(input)))
+		c.It("evaluates a value for the test case", func(c *gspec.Case) {
+			c.Expect(capitalize(c.Get(input))).To(Equal("HELLO"))
 		})
 
 		c.Context("with spaces", func(c *gspec.Context) {
-			input := c.Let(func(c *gspec.Case) string { return "Hello, world" })
+			c.Set(input, func(c *gspec.Case) string { return "Hello, world" })
 
-			c.It("should capitalize the input", func(c *gspec.Case) {
-				testhelp.AssertEqual(c.T(), "HELLO, WORLD", capitalize(c.Get(input)))
+			c.It("uses the value overridden by the context", func(c *gspec.Case) {
+				c.Expect(capitalize(c.Get(input))).To(Equal("HELLO, WORLD"))
 			})
 		})
 	})

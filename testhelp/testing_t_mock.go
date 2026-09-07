@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+// TestingTMock is a test runner that records and validates expected subtests.
 type TestingTMock struct {
 	t             *testing.T
 	expectAllRuns bool
@@ -55,6 +56,12 @@ func (m *TestingTMock) ExpectRun(name string) {
 
 // Helper implements the helper method required by gspec's test runner.
 func (m *TestingTMock) Helper() {}
+
+// Errorf reports a formatted error to the underlying test.
+func (m *TestingTMock) Errorf(format string, args ...any) {
+	m.t.Helper()
+	m.t.Errorf(format, args...)
+}
 
 // Run executes f as a subtest when name is allowed or was registered as an expected run.
 func (m *TestingTMock) Run(name string, f func(t *testing.T)) bool {

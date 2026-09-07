@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/broothie/gspec"
-	"github.com/broothie/gspec/testhelp"
+	. "github.com/broothie/gspec/match"
 )
 
-func Test_hooks(t *testing.T) {
+func TestHooks(t *testing.T) {
 	gspec.Run(t, func(c *gspec.Context) {
 		mux := c.Let(func(c *gspec.Case) *http.ServeMux { return http.NewServeMux() })
 		server := c.Let(func(c *gspec.Case) *httptest.Server { return httptest.NewServer(c.Get(mux)) })
@@ -27,8 +27,13 @@ func Test_hooks(t *testing.T) {
 
 		c.It("serves requests", func(c *gspec.Case) {
 			response, err := http.Get(fmt.Sprintf("%s/api/teapot", c.Get(server).URL))
-			testhelp.AssertEqual(c.T(), nil, err)
-			testhelp.AssertEqual(c.T(), http.StatusTeapot, response.StatusCode)
+			c.Expect(err).NotTo(HaveOccurred())
+			if err != nil {
+				return
+			}
+			defer response.Body.Close()
+
+			c.Expect(response.StatusCode).To(Equal(http.StatusTeapot))
 		})
 	})
 }

@@ -6,10 +6,12 @@ import (
 )
 
 type (
+	// LetFunc computes the value of a Let for a test case.
 	LetFunc[T any] func(c *Case) T
 	letFunc        func(c *Case) any
 )
 
+// Let is a typed handle to a lazily evaluated value registered on a Context.
 type Let[T any] struct {
 	id string
 }
