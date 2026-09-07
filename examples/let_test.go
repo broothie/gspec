@@ -13,18 +13,18 @@ func capitalize(input string) string {
 }
 
 func TestLet(t *testing.T) {
-	gspec.Run(t, func(c *gspec.Context) {
-		input := c.Let(func(c *gspec.Case) string { return "Hello" })
+	gspec.Run(t, func(t *gspec.TestContext) {
+		input := t.Let(func(t *gspec.TestCase) string { return "Hello" })
 
-		c.It("evaluates a value for the test case", func(c *gspec.Case) {
-			c.Expect(capitalize(c.Get(input))).To(Equal("HELLO"))
+		t.It("evaluates a value for the test case", func(t *gspec.TestCase) {
+			t.Expect(capitalize(t.Get(input))).To(Equal("HELLO"))
 		})
 
-		c.Context("with spaces", func(c *gspec.Context) {
-			c.Set(input, func(c *gspec.Case) string { return "Hello, world" })
+		t.Context("with spaces", func(t *gspec.TestContext) {
+			t.Set(input, func(t *gspec.TestCase) string { return "Hello, world" })
 
-			c.It("uses the value overridden by the context", func(c *gspec.Case) {
-				c.Expect(capitalize(c.Get(input))).To(Equal("HELLO, WORLD"))
+			t.It("uses the value overridden by the context", func(t *gspec.TestCase) {
+				t.Expect(capitalize(t.Get(input))).To(Equal("HELLO, WORLD"))
 			})
 		})
 	})

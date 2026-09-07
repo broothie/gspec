@@ -29,10 +29,10 @@ import (
 )
 
 func TestAddition(t *testing.T) {
-	gspec.Describe(t, "addition", func(c *gspec.Context) {
-		c.It("returns the sum of its operands", func(c *gspec.Case) {
-			c.Expect(1 + 2).To(Equal(3))
-			c.Expect(1 + 2).NotTo(Equal(4))
+	gspec.Describe(t, "addition", func(t *gspec.TestContext) {
+		t.It("returns the sum of its operands", func(t *gspec.TestCase) {
+			t.Expect(1 + 2).To(Equal(3))
+			t.Expect(1 + 2).NotTo(Equal(4))
 		})
 	})
 }
@@ -46,11 +46,11 @@ Use `Describe` to name a subject and `Context` to describe a condition. Groups c
 
 ```go
 func TestGreeting(t *testing.T) {
-	gspec.Run(t, func(c *gspec.Context) {
-		c.Describe("Greeting", func(c *gspec.Context) {
-			c.Context("when a name is present", func(c *gspec.Context) {
-				c.It("includes the name", func(c *gspec.Case) {
-					c.Expect("Hello, Gopher!").To(ContainSubstring("Gopher"))
+	gspec.Run(t, func(t *gspec.TestContext) {
+		t.Describe("Greeting", func(t *gspec.TestContext) {
+			t.Context("when a name is present", func(t *gspec.TestContext) {
+				t.It("includes the name", func(t *gspec.TestCase) {
+					t.Expect("Hello, Gopher!").To(ContainSubstring("Gopher"))
 				})
 			})
 		})
@@ -66,21 +66,21 @@ Nested groups can override a let with `Set`. Lets may also depend on other lets:
 
 ```go
 func TestGreeting(t *testing.T) {
-	gspec.Describe(t, "Greeting", func(c *gspec.Context) {
-		name := c.Let(func(c *gspec.Case) string { return "Gopher" })
-		greeting := c.Let(func(c *gspec.Case) string {
-			return "Hello, " + c.Get(name) + "!"
+	gspec.Describe(t, "Greeting", func(t *gspec.TestContext) {
+		name := t.Let(func(t *gspec.TestCase) string { return "Gopher" })
+		greeting := t.Let(func(t *gspec.TestCase) string {
+			return "Hello, " + t.Get(name) + "!"
 		})
 
-		c.It("greets the default name", func(c *gspec.Case) {
-			c.Expect(c.Get(greeting)).To(Equal("Hello, Gopher!"))
+		t.It("greets the default name", func(t *gspec.TestCase) {
+			t.Expect(t.Get(greeting)).To(Equal("Hello, Gopher!"))
 		})
 
-		c.Context("with another name", func(c *gspec.Context) {
-			c.Set(name, func(c *gspec.Case) string { return "Rubyist" })
+		t.Context("with another name", func(t *gspec.TestContext) {
+			t.Set(name, func(t *gspec.TestCase) string { return "Rubyist" })
 
-			c.It("uses the overridden name", func(c *gspec.Case) {
-				c.Expect(c.Get(greeting)).To(Equal("Hello, Rubyist!"))
+			t.It("uses the overridden name", func(t *gspec.TestCase) {
+				t.Expect(t.Get(greeting)).To(Equal("Hello, Rubyist!"))
 			})
 		})
 	})
@@ -89,23 +89,23 @@ func TestGreeting(t *testing.T) {
 
 ## Hooks
 
-`BeforeEach` and `AfterEach` register setup and cleanup functions. Hooks are inherited by nested groups and receive the current `Case`, allowing them to access lets with `Get`.
+`BeforeEach` and `AfterEach` register setup and cleanup functions. Hooks are inherited by nested groups and receive the current `TestCase`, allowing them to access lets with `Get`.
 
 ```go
-gspec.Run(t, func(c *gspec.Context) {
-	values := c.Let(func(c *gspec.Case) *[]int { return &[]int{} })
+gspec.Run(t, func(t *gspec.TestContext) {
+	values := t.Let(func(t *gspec.TestCase) *[]int { return &[]int{} })
 
-	c.BeforeEach(func(c *gspec.Case) {
-		caseValues := c.Get(values)
+	t.BeforeEach(func(t *gspec.TestCase) {
+		caseValues := t.Get(values)
 		*caseValues = append(*caseValues, 1)
 	})
 
-	c.AfterEach(func(c *gspec.Case) {
-		*c.Get(values) = nil
+	t.AfterEach(func(t *gspec.TestCase) {
+		*t.Get(values) = nil
 	})
 
-	c.It("runs between the hooks", func(c *gspec.Case) {
-		c.Expect(*c.Get(values)).To(Contain(1))
+	t.It("runs between the hooks", func(t *gspec.TestCase) {
+		t.Expect(*t.Get(values)).To(Contain(1))
 	})
 })
 ```
@@ -117,11 +117,11 @@ See the executable [hooks example](./examples/hooks_test.go) for a complete setu
 Inside a case, `Expect` captures an actual value. `To` reports a failure when its matcher does not match, while `NotTo` reports a failure when it does.
 
 ```go
-c.Expect(actual).To(Equal(expected))
-c.Expect(actual).NotTo(Equal(unexpected))
+t.Expect(actual).To(Equal(expected))
+t.Expect(actual).NotTo(Equal(unexpected))
 ```
 
-Outside a `Case`, the package-level form reports to any compatible test value:
+Outside a `TestCase`, the package-level form reports to any compatible test value:
 
 ```go
 gspec.Expect(t, actual).To(Equal(expected))
@@ -150,29 +150,30 @@ Some matcher semantics are worth calling out:
 Most matcher types are inferred from their arguments. Matchers whose value type does not appear in an argument need an explicit type argument:
 
 ```go
-c.Expect(pointer).To(BeNil[*Widget]())
-c.Expect(values).To(BeEmpty[[]int]())
-c.Expect(values).To(HaveLength[[]int](3))
-c.Expect(err).To(BeErrorType[*ValidationError]())
+t.Expect(pointer).To(BeNil[*Widget]())
+t.Expect(values).To(BeEmpty[[]int]())
+t.Expect(values).To(HaveLength[[]int](3))
+t.Expect(err).To(BeErrorType[*ValidationError]())
 ```
 
 For a one-off assertion, `Satisfy` accepts a description and a typed predicate:
 
 ```go
-c.Expect(4).To(Satisfy("be even", func(value int) bool {
+t.Expect(4).To(Satisfy("be even", func(value int) bool {
 	return value%2 == 0
 }))
 ```
 
 See the executable [expectations example](./examples/expect_test.go) for every built-in matcher.
 
-## Accessing `testing.T`
+## Using `testing.T`
 
-`Case.T` returns the underlying `*testing.T` when a test needs an API outside gspec:
+`TestCase` embeds its underlying `*testing.T`, so standard testing methods are available directly. The embedded `T` field can be passed to functions that specifically require a `*testing.T`:
 
 ```go
-c.It("uses a testing helper", func(c *gspec.Case) {
-	somethingThatNeedsTestingT(c.T())
+t.It("uses a testing helper", func(t *gspec.TestCase) {
+	t.Cleanup(cleanup)
+	somethingThatNeedsTestingT(t.T)
 })
 ```
 

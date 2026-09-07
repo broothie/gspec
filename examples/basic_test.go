@@ -8,9 +8,9 @@ import (
 )
 
 func TestBasic(t *testing.T) {
-	gspec.Describe(t, "addition", func(c *gspec.Context) {
-		c.It("returns the sum of its operands", func(c *gspec.Case) {
-			c.Expect(1 + 2).To(Equal(3))
+	gspec.Describe(t, "addition", func(t *gspec.TestContext) {
+		t.It("returns the sum of its operands", func(t *gspec.TestCase) {
+			t.Expect(1 + 2).To(Equal(3))
 		})
 	})
 }

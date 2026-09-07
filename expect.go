@@ -18,10 +18,10 @@ func Expect[A any](t testingT, actual A) *ExpectationTarget[A] {
 }
 
 // Expect creates an expectation for actual in this test case.
-func (c *Case) Expect[A any](actual A) *ExpectationTarget[A] {
-	c.testingT.Helper()
+func (t *TestCase) Expect[A any](actual A) *ExpectationTarget[A] {
+	t.Helper()
 
-	return Expect(c.T(), actual)
+	return Expect(t, actual)
 }
 
 // To reports a failure unless match accepts the actual value.

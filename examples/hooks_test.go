@@ -11,29 +11,29 @@ import (
 )
 
 func TestHooks(t *testing.T) {
-	gspec.Run(t, func(c *gspec.Context) {
-		mux := c.Let(func(c *gspec.Case) *http.ServeMux { return http.NewServeMux() })
-		server := c.Let(func(c *gspec.Case) *httptest.Server { return httptest.NewServer(c.Get(mux)) })
+	gspec.Run(t, func(t *gspec.TestContext) {
+		mux := t.Let(func(t *gspec.TestCase) *http.ServeMux { return http.NewServeMux() })
+		server := t.Let(func(t *gspec.TestCase) *httptest.Server { return httptest.NewServer(t.Get(mux)) })
 
-		c.BeforeEach(func(c *gspec.Case) {
-			c.Get(mux).HandleFunc("/api/teapot", func(w http.ResponseWriter, r *http.Request) {
+		t.BeforeEach(func(t *gspec.TestCase) {
+			t.Get(mux).HandleFunc("/api/teapot", func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusTeapot)
 			})
 		})
 
-		c.AfterEach(func(c *gspec.Case) {
-			c.Get(server).Close()
+		t.AfterEach(func(t *gspec.TestCase) {
+			t.Get(server).Close()
 		})
 
-		c.It("serves requests", func(c *gspec.Case) {
-			response, err := http.Get(fmt.Sprintf("%s/api/teapot", c.Get(server).URL))
-			c.Expect(err).NotTo(HaveOccurred())
+		t.It("serves requests", func(t *gspec.TestCase) {
+			response, err := http.Get(fmt.Sprintf("%s/api/teapot", t.Get(server).URL))
+			t.Expect(err).NotTo(HaveOccurred())
 			if err != nil {
 				return
 			}
 			defer response.Body.Close()
 
-			c.Expect(response.StatusCode).To(Equal(http.StatusTeapot))
+			t.Expect(response.StatusCode).To(Equal(http.StatusTeapot))
 		})
 	})
 }

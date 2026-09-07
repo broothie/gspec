@@ -1,29 +1,29 @@
 package gspec
 
 // BeforeEach registers a hook to run before each test case.
-func (c *Context) BeforeEach(f CaseFunc) {
-	c.befores = append(c.befores, f)
+func (t *TestContext) BeforeEach(f TestCaseFunc) {
+	t.befores = append(t.befores, f)
 }
 
 // AfterEach registers a hook to run after each test case.
-func (c *Context) AfterEach(f CaseFunc) {
-	c.afters = append(c.afters, f)
+func (t *TestContext) AfterEach(f TestCaseFunc) {
+	t.afters = append(t.afters, f)
 }
 
-func (c *Context) allBefores() []CaseFunc {
-	if c.parent == nil {
-		return append([]CaseFunc(nil), c.befores...)
+func (t *TestContext) allBefores() []TestCaseFunc {
+	if t.parent == nil {
+		return append([]TestCaseFunc(nil), t.befores...)
 	}
 
-	befores := c.parent.allBefores()
-	return append(befores, c.befores...)
+	befores := t.parent.allBefores()
+	return append(befores, t.befores...)
 }
 
-func (c *Context) allAfters() []CaseFunc {
-	if c.parent == nil {
-		return append([]CaseFunc(nil), c.afters...)
+func (t *TestContext) allAfters() []TestCaseFunc {
+	if t.parent == nil {
+		return append([]TestCaseFunc(nil), t.afters...)
 	}
 
-	afters := c.parent.allAfters()
-	return append(afters, c.afters...)
+	afters := t.parent.allAfters()
+	return append(afters, t.afters...)
 }

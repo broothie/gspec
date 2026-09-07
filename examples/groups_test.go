@@ -8,11 +8,11 @@ import (
 )
 
 func TestGroups(t *testing.T) {
-	gspec.Run(t, func(c *gspec.Context) {
-		c.Describe("strings", func(c *gspec.Context) {
-			c.Context("when text is present", func(c *gspec.Context) {
-				c.It("can describe its behavior", func(c *gspec.Case) {
-					c.Expect("hello").NotTo(Equal(""))
+	gspec.Run(t, func(t *gspec.TestContext) {
+		t.Describe("strings", func(t *gspec.TestContext) {
+			t.Context("when text is present", func(t *gspec.TestContext) {
+				t.It("can describe its behavior", func(t *gspec.TestCase) {
+					t.Expect("hello").NotTo(Equal(""))
 				})
 			})
 		})
